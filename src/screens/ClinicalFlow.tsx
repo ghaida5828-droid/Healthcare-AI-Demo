@@ -787,6 +787,7 @@ function C3Procedure({ onNext, procedure, setProcedure }: { onNext: () => void; 
 }
 
 // ─── C4: Eye Signature Permission ─────────────────────────────────────────────
+// ─── C4: Eye Signature Permission ─────────────────────────────────────────────
 function C4Permission({
   onNext,
   onDecline,
@@ -797,22 +798,59 @@ function C4Permission({
   instance: 'pre-sign' | 'pre-submit'
 }) {
   const { t, theme } = useApp()
+
   const [choice, setChoice] = useState<'yes' | 'no' | null>(null)
   const [counting, setCounting] = useState<'yes' | 'no' | null>(null)
-  const [declined, setDeclined] = useState(false)
+
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
 
   const eyeCloseStartRef = useRef<number | null>(null)
   const lastBeepSecondRef = useRef(0)
   const processingRef = useRef(false)
+
+  const beep = () => {
+    try {
+      const AudioContextClass =
+        window.AudioContext ||
+        (window as typeof window & {
+          webkitAudioContext?: typeof AudioContext
+        }).webkitAudioContext
+
+      if (!AudioContextClass) return
+
+      const audioContext = new AudioContextClass()
+      const oscillator = audioContext.createOscillator()
+      const gain = audioContext.createGain()
+
+      oscillator.frequency.value = 800
+      oscillator.type = 'sine'
+
+      gain.gain.setValueAtTime(0.15, audioContext.currentTime)
+      gain.gain.exponentialRampToValueAtTime(
+        0.001,
+        audioContext.currentTime + 0.12
+      )
+
+      oscillator.connect(gain)
+      gain.connect(audioContext.destination)
+
+      oscillator.start()
+      oscillator.stop(audioContext.currentTime + 0.12)
+    } catch {
+      // Ignore audio errors
+    }
+  }
+
   useEffect(() => {
     let active = true
 
     const startCamera = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'user' },
+          video: {
+            facingMode: 'user',
+          },
           audio: false,
         })
 
@@ -842,29 +880,8 @@ function C4Permission({
       }
     }
   }, [])
-  const beep = () => {
-    const AudioContextClass =
-      window.AudioContext ||
-      (window as any).webkitAudioContext
 
-    const audioContext = new AudioContextClass()
-    const oscillator = audioContext.createOscillator()
-    const gain = audioContext.createGain()
-
-    oscillator.frequency.value = 800
-    gain.gain.value = 0.15
-
-    oscillator.connect(gain)
-    gain.connect(audioContext.destination)
-
-    oscillator.start()
-
-    setTimeout(() => {
-      oscillator.stop()
-      audioContext.close()
-    }, 120)
-  }
-   useEffect(() => {
+  useEffect(() => {
     const sendFrame = async () => {
       const video = videoRef.current
 
@@ -881,10 +898,12 @@ function C4Permission({
 
       try {
         const canvas = document.createElement('canvas')
+
         canvas.width = video.videoWidth
         canvas.height = video.videoHeight
 
         const context = canvas.getContext('2d')
+
         if (!context) return
 
         context.drawImage(
@@ -896,13 +915,21 @@ function C4Permission({
         )
 
         const blob = await new Promise<Blob | null>((resolve) => {
-          canvas.toBlob(resolve, 'image/jpeg', 0.8)
+          canvas.toBlob(
+            resolve,
+            'image/jpeg',
+            0.8
+          )
         })
 
         if (!blob) return
 
         const formData = new FormData()
-        formData.append('file', blob, 'permission-frame.jpg')
+        formData.append(
+          'file',
+          blob,
+          'permission-frame.jpg'
+        )
 
         const response = await fetch(
           '/eye-api/process-frame',
@@ -915,7 +942,13 @@ function C4Permission({
         if (!response.ok) return
 
         const data = await response.json()
-        console.log('C4 BLINK DATA:', data.blink, data)
+
+        console.log(
+          'C4 BLINK DATA:',
+          data.blink,
+          data
+        )
+
         const now = performance.now()
 
         if (data.blink === true) {
@@ -950,38 +983,36 @@ function C4Permission({
             beep()
             lastBeepSecondRef.current = 3
           }
-
         } else {
           if (eyeCloseStartRef.current !== null) {
             const duration =
               (now - eyeCloseStartRef.current) / 1000
 
-            eyeCloseStartRef.current = null
-            lastBeepSecondRef.current = 0
-
-            if (duration >= 3) {
-               setChoice('no')
-               setCounting(null)
-               setDeclined(true)
-
-               setTimeout(() => {
-               onDecline()
-            }, 2000)
-
-          } else if (duration >= 2) {
+            if (duration >= 2 && duration < 3) {
               setChoice('yes')
-              setCounting(null)
+              setCounting('yes')
 
               setTimeout(() => {
                 onNext()
-              }, 500)
+              }, 300)
+            }
+
+            if (duration >= 3) {
+              setChoice('no')
+              setCounting('no')
+
+              setTimeout(() => {
+                onDecline()
+              }, 300)
             }
           }
-        }
 
+          eyeCloseStartRef.current = null
+          lastBeepSecondRef.current = 0
+        }
       } catch (error) {
         console.error(
-          'C4 blink error:',
+          'C4 frame error:',
           error
         )
       } finally {
@@ -989,113 +1020,272 @@ function C4Permission({
       }
     }
 
-    const interval = setInterval(sendFrame, 100)
+    const interval = setInterval(
+      sendFrame,
+      100
+    )
 
-    return () => clearInterval(interval)
-  }, [onNext])
-  const handleChoice = (c: 'yes' | 'no') => {
-    setChoice(c)
-    setCounting(c)
-    if (c === 'yes') setTimeout(onNext, 3200)
-  }
+    return () => {
+      clearInterval(interval)
+    }
+  }, [onNext, onDecline])
 
   return (
-   <>
-     <video
-       ref={videoRef}
-       autoPlay
-       playsInline
-       muted
-       style={{
-         position: 'absolute',
-         width: 1,
-         height: 1,
-         opacity: 0,
-         pointerEvents: 'none',
-       }}
-     />
-
     <ScreenContainer>
-      {declined && (
-  <div
-    style={{
-      background: '#FEF2F2',
-      border: '2px solid #EF4444',
-      borderRadius: 16,
-      padding: '18px 20px',
-      marginBottom: 20,
-      textAlign: 'center',
-      color: '#B91C1C',
-      fontWeight: 700,
-    }}
-  >
-    <div style={{ fontSize: 30, marginBottom: 6 }}>❌</div>
-    <div style={{ fontSize: 20 }}>
-      Consent Declined
-    </div>
-    <div style={{ fontSize: 13, marginTop: 5 }}>
-      Returning to Home...
-    </div>
-  </div>
-)}
-    
       <ScreenTitle
-        title={t('perm.title')}
-        subtitle={instance === 'pre-sign' ? t('perm.question') : t('perm.final.question')}
-        icon={<AnimatedEye size={65} color={theme.primary} />}
+        title={
+          instance === 'pre-sign'
+            ? t('perm.title')
+            : t('perm.final.title')
+        }
+        subtitle={
+          instance === 'pre-sign'
+            ? t('perm.subtitle')
+            : t('perm.final.subtitle')
+        }
       />
-      <Card style={{ marginBottom: 22 }}>
-        <div style={{ textAlign: 'center', marginBottom: 22 }}>
-  <h2
-    style={{
-      fontFamily: 'Plus Jakarta Sans, Cairo',
-      fontWeight: 800,
-      fontSize: 19,
-      color: theme.text,
-      marginBottom: 6,
-    }}
-  >
-    {t('permissionQ')}
-  </h2>
-</div>
-</Card>
 
       <Card style={{ marginBottom: 20 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
-          <button onClick={() => {}} style={{ background: choice === 'yes' ? '#F0FDF4' : theme.card, border: `2.5px solid ${choice === 'yes' ? '#16a34a' : theme.border}`, borderRadius: 18, padding: '24px 14px', cursor: 'pointer', textAlign: 'center', transition: 'all 0.2s' }}>
-            <div style={{ fontSize: 36, marginBottom: 8 }}>✅</div>
-            <div style={{ fontFamily: 'Plus Jakarta Sans, Cairo', fontWeight: 800, fontSize: 22, color: '#16a34a', marginBottom: 4 }}>{t('perm.yes')}</div>
-            <div style={{ fontFamily: 'Inter, Cairo', fontSize: 12, color: theme.textMuted, marginBottom: 8 }}>{t('perm.yes.sub')}</div>
-            <div style={{ background: '#E6F2EC', borderRadius: 20, padding: '4px 10px', display: 'inline-block', fontFamily: 'Inter, Cairo', fontSize: 11, color: '#006633', fontWeight: 600 }}>
+        <div
+          style={{
+            textAlign: 'center',
+            padding: '10px 0 20px',
+          }}
+        >
+          <AnimatedEye />
+
+          <h3
+            style={{
+              fontFamily:
+                'Plus Jakarta Sans, Cairo',
+              fontWeight: 800,
+              fontSize: 18,
+              color: theme.text,
+              margin: '14px 0 8px',
+            }}
+          >
+            {t('perm.question')}
+          </h3>
+
+          <p
+            style={{
+              fontFamily:
+                'Inter, Cairo',
+              fontSize: 13,
+              color: theme.textMuted,
+              lineHeight: 1.6,
+              margin: 0,
+            }}
+          >
+            {t('perm.instruction')}
+          </p>
+        </div>
+
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            marginBottom: 18,
+          }}
+        >
+          <div
+            style={{
+              width: 220,
+              height: 165,
+              borderRadius: 16,
+              overflow: 'hidden',
+              position: 'relative',
+              background: '#050510',
+              border:
+                `2px solid ${theme.border}`,
+            }}
+          >
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                transform: 'scaleX(-1)',
+              }}
+            />
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns:
+              '1fr 1fr',
+            gap: 14,
+          }}
+        >
+          <button
+            onClick={() => {
+              setChoice('yes')
+              setCounting('yes')
+
+              setTimeout(() => {
+                onNext()
+              }, 300)
+            }}
+            style={{
+              background:
+                choice === 'yes'
+                  ? '#F0FDF4'
+                  : theme.card,
+              border:
+                `2.5px solid ${
+                  choice === 'yes'
+                    ? '#16a34a'
+                    : theme.border
+                }`,
+              borderRadius: 16,
+              padding: '20px 14px',
+              cursor: 'pointer',
+              textAlign: 'center',
+            }}
+          >
+            <div
+              style={{
+                fontSize: 30,
+                marginBottom: 6,
+              }}
+            >
+              ✅
+            </div>
+
+            <div
+              style={{
+                fontFamily:
+                  'Plus Jakarta Sans, Cairo',
+                fontWeight: 800,
+                fontSize: 18,
+                color: '#16a34a',
+              }}
+            >
+              {t('perm.yes')}
+            </div>
+
+            <div
+              style={{
+                fontFamily:
+                  'Inter, Cairo',
+                fontSize: 11,
+                color: theme.textMuted,
+                marginTop: 4,
+              }}
+            >
               {t('perm.yes.instruction')}
             </div>
           </button>
 
-          <button onClick={() => {}} style={{ background: choice === 'no' ? theme.dangerLight : theme.card, border: `2.5px solid ${choice === 'no' ? theme.danger : theme.border}`, borderRadius: 18, padding: '24px 14px', cursor: 'pointer', textAlign: 'center', transition: 'all 0.2s' }}>
-            <div style={{ fontSize: 36, marginBottom: 8 }}>❌</div>
-            <div style={{ fontFamily: 'Plus Jakarta Sans, Cairo', fontWeight: 800, fontSize: 22, color: theme.danger, marginBottom: 4 }}>{t('perm.no')}</div>
-            <div style={{ fontFamily: 'Inter, Cairo', fontSize: 12, color: theme.textMuted, marginBottom: 8 }}>{t('perm.no.sub')}</div>
-            <div style={{ background: theme.dangerLight, borderRadius: 20, padding: '4px 10px', display: 'inline-block', fontFamily: 'Inter, Cairo', fontSize: 11, color: theme.danger, fontWeight: 600 }}>
+          <button
+            onClick={() => {
+              setChoice('no')
+              setCounting('no')
+
+              setTimeout(() => {
+                onDecline()
+              }, 300)
+            }}
+            style={{
+              background:
+                choice === 'no'
+                  ? theme.dangerLight
+                  : theme.card,
+              border:
+                `2.5px solid ${
+                  choice === 'no'
+                    ? theme.danger
+                    : theme.border
+                }`,
+              borderRadius: 16,
+              padding: '20px 14px',
+              cursor: 'pointer',
+              textAlign: 'center',
+            }}
+          >
+            <div
+              style={{
+                fontSize: 30,
+                marginBottom: 6,
+              }}
+            >
+              ❌
+            </div>
+
+            <div
+              style={{
+                fontFamily:
+                  'Plus Jakarta Sans, Cairo',
+                fontWeight: 800,
+                fontSize: 18,
+                color: theme.danger,
+              }}
+            >
+              {t('perm.no')}
+            </div>
+
+            <div
+              style={{
+                fontFamily:
+                  'Inter, Cairo',
+                fontSize: 11,
+                color: theme.textMuted,
+                marginTop: 4,
+              }}
+            >
               {t('perm.no.instruction')}
             </div>
           </button>
         </div>
 
         {counting && (
-          <div className="animate-float-in" style={{ display: 'flex', justifyContent: 'center', padding: '18px', background: counting === 'yes' ? '#F0FDF4' : theme.dangerLight, borderRadius: 14, border: `1px solid ${counting === 'yes' ? '#86EFAC' : '#FECACA'}` }}>
-            <CountdownTimer seconds={counting === 'yes' ? 3 : 5} label={counting === 'yes' ? t('perm.yes.counting') : t('perm.no.counting')} color={counting === 'yes' ? '#16a34a' : theme.danger} />
-          </div>
-        )}
-
-        {!counting && (
-          <div style={{ padding: '12px 14px', background: '#FFFBEB', borderRadius: 10, border: '1px solid #FDE68A', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span>💡</span>
-            <span style={{ fontFamily: 'Inter, Cairo', fontSize: 12, color: '#92400E' }}>{t('perm.simulate')}</span>
+          <div
+            className="animate-float-in"
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              padding: 18,
+              marginTop: 14,
+              background:
+                counting === 'yes'
+                  ? '#F0FDF4'
+                  : theme.dangerLight,
+              borderRadius: 14,
+              border:
+                `1px solid ${
+                  counting === 'yes'
+                    ? '#86EFAC'
+                    : '#FECACA'
+                }`,
+            }}
+          >
+            <CountdownTimer
+              seconds={
+                counting === 'yes'
+                  ? 3
+                  : 5
+              }
+              label={
+                counting === 'yes'
+                  ? t('perm.yes.counting')
+                  : t('perm.no.counting')
+              }
+              color={
+                counting === 'yes'
+                  ? '#16a34a'
+                  : theme.danger
+              }
+            />
           </div>
         )}
       </Card>
     </ScreenContainer>
-   </>
   )
 }
 
@@ -1773,183 +1963,836 @@ const signaturePath = confirmedPoints
 }
 
 // ─── C7: Final Signature Confirmation (2nd permission) ────────────────────────
-function C7FinalConfirmation({ onNext, procedure }: { onNext: () => void; procedure: string }) {
+// ─── C7: Final Signature Confirmation (2nd permission) ───────────────────────
+function C7FinalConfirmation({
+  onNext,
+  procedure,
+}: {
+  onNext: () => void
+  procedure: string
+}) {
   const { t, theme } = useApp()
-  const [choice, setChoice] = useState<'yes' | 'no' | null>(null)
-  const [counting, setCounting] = useState<'yes' | 'no' | null>(null)
-  const blinkStartRef = useRef<number | null>(null)
-const lastBlinkValueRef = useRef(false)
-const beepedSecondsRef = useRef<number[]>([])
-const completedRef = useRef(false)
 
-const playBeep = () => {
-  try {
-    const AudioContextClass =
-      window.AudioContext ||
-      (window as typeof window & {
-        webkitAudioContext?: typeof AudioContext
-      }).webkitAudioContext
+  const [choice, setChoice] = useState<
+    'yes' | 'no' | null
+  >(null)
 
-    if (!AudioContextClass) return
+  const [counting, setCounting] = useState<
+    'yes' | 'no' | null
+  >(null)
 
-    const audioContext = new AudioContextClass()
-    const oscillator = audioContext.createOscillator()
-    const gain = audioContext.createGain()
+  // Camera
+  const videoRef =
+    useRef<HTMLVideoElement>(null)
 
-    oscillator.frequency.value = 800
-    oscillator.type = 'sine'
+  const streamRef =
+    useRef<MediaStream | null>(null)
 
-    gain.gain.setValueAtTime(0.15, audioContext.currentTime)
-    gain.gain.exponentialRampToValueAtTime(
-      0.001,
-      audioContext.currentTime + 0.15
-    )
+  const [cameraReady, setCameraReady] =
+    useState(false)
 
-    oscillator.connect(gain)
-    gain.connect(audioContext.destination)
+  const [faceDetected, setFaceDetected] =
+    useState<boolean | null>(null)
 
-    oscillator.start()
-    oscillator.stop(audioContext.currentTime + 0.15)
-  } catch {
-    // Ignore audio errors
-  }
-}
- useEffect(() => {
-  
+  // Blink
+  const blinkStartRef =
+    useRef<number | null>(null)
 
-  const checkBlink = async () => {
+  const lastBlinkValueRef =
+    useRef(false)
+
+  const beepedSecondsRef =
+    useRef<number[]>([])
+
+  const completedRef =
+    useRef(false)
+
+  const processingRef =
+    useRef(false)
+
+  const playBeep = () => {
     try {
-      const response = await fetch('/eye-api/gaze-state')
+      const AudioContextClass =
+        window.AudioContext ||
+        (window as typeof window & {
+          webkitAudioContext?: typeof AudioContext
+        }).webkitAudioContext
 
-      if (!response.ok) return
+      if (!AudioContextClass) return
 
-      const data = await response.json()
-      const blink = data.blink === true
+      const audioContext =
+        new AudioContextClass()
 
-      const now = performance.now()
+      const oscillator =
+        audioContext.createOscillator()
 
-      // بدأ إغلاق العين
-      if (blink && !lastBlinkValueRef.current) {
-        blinkStartRef.current = now
-        beepedSecondsRef.current = []
-        setCounting(null)
+      const gain =
+        audioContext.createGain()
 
-        console.log('C4: BLINK START')
-      }
+      oscillator.frequency.value = 800
+      oscillator.type = 'sine'
 
-      // العين ما زالت مغلقة
-      if (blink && blinkStartRef.current !== null && !completedRef.current) {
-        const elapsed = (now - blinkStartRef.current) / 1000
+      gain.gain.setValueAtTime(
+        0.15,
+        audioContext.currentTime
+      )
 
-        for (const second of [1, 2, 3]) {
-          if (
-            elapsed >= second &&
-            !beepedSecondsRef.current.includes(second)
-          ) {
-            beepedSecondsRef.current.push(second)
-            playBeep()
+      gain.gain.exponentialRampToValueAtTime(
+        0.001,
+        audioContext.currentTime + 0.15
+      )
 
-            console.log(`C4: ${second} SECOND`)
+      oscillator.connect(gain)
+      gain.connect(
+        audioContext.destination
+      )
 
-            if (second === 2) {
-              setCounting('yes')
-            }
+      oscillator.start()
 
-            if (second === 3) {
-              setCounting('no')
-            }
-          }
-        }
-      }
-
-      // العين انفتحت
-      if (!blink && lastBlinkValueRef.current) {
-        if (blinkStartRef.current !== null && !completedRef.current) {
-          const duration = (now - blinkStartRef.current) / 1000
-
-          console.log('C4: BLINK END', duration)
-
-          if (duration >= 2 && duration < 3) {
-            completedRef.current = true
-            setChoice('yes')
-            setCounting(null)
-
-            console.log('C4: YES')
-            setTimeout(onNext, 300)
-          } else if (duration >= 3) {
-            completedRef.current = true
-            setChoice('no')
-            setCounting(null)
-
-            console.log('C4: NO')
-            setTimeout(onNext, 300)
-          }
-        }
-
-        blinkStartRef.current = null
-        beepedSecondsRef.current = []
-      }
-
-      lastBlinkValueRef.current = blink
-    } catch (error) {
-      console.error('C4 blink state error:', error)
+      oscillator.stop(
+        audioContext.currentTime + 0.15
+      )
+    } catch {
+      // Ignore audio errors
     }
   }
 
-  const interval = setInterval(checkBlink, 100)
+  // ─────────────────────────────────────
+  // Start camera
+  // ─────────────────────────────────────
+  useEffect(() => {
+    let active = true
 
-  return () => {
-    clearInterval(interval)
-  }
-}, [])
-  
+    const startCamera = async () => {
+      try {
+        const stream =
+          await navigator.mediaDevices.getUserMedia(
+            {
+              video: {
+                facingMode: 'user',
+              },
+              audio: false,
+            }
+          )
+
+        if (!active) {
+          stream
+            .getTracks()
+            .forEach((track) =>
+              track.stop()
+            )
+
+          return
+        }
+
+        streamRef.current = stream
+
+        if (videoRef.current) {
+          videoRef.current.srcObject =
+            stream
+        }
+
+        setCameraReady(true)
+      } catch (error) {
+        console.error(
+          'C7 camera error:',
+          error
+        )
+
+        setCameraReady(false)
+        setFaceDetected(false)
+      }
+    }
+
+    startCamera()
+
+    return () => {
+      active = false
+
+      if (streamRef.current) {
+        streamRef.current
+          .getTracks()
+          .forEach((track) =>
+            track.stop()
+          )
+
+        streamRef.current = null
+      }
+    }
+  }, [])
+
+  // ─────────────────────────────────────
+  // Face detection
+  // ─────────────────────────────────────
+  useEffect(() => {
+    if (!cameraReady) return
+
+    let active = true
+
+    const checkFace = async () => {
+      if (
+        !videoRef.current ||
+        processingRef.current
+      ) {
+        return
+      }
+
+      const video =
+        videoRef.current
+
+      if (
+        video.videoWidth === 0 ||
+        video.videoHeight === 0
+      ) {
+        return
+      }
+
+      processingRef.current = true
+
+      try {
+        const canvas =
+          document.createElement(
+            'canvas'
+          )
+
+        canvas.width =
+          video.videoWidth
+
+        canvas.height =
+          video.videoHeight
+
+        const context =
+          canvas.getContext('2d')
+
+        if (!context) return
+
+        context.drawImage(
+          video,
+          0,
+          0,
+          canvas.width,
+          canvas.height
+        )
+
+        const blob =
+          await new Promise<Blob | null>(
+            (resolve) => {
+              canvas.toBlob(
+                resolve,
+                'image/jpeg',
+                0.8
+              )
+            }
+          )
+
+        if (!blob || !active) return
+
+        const formData =
+          new FormData()
+
+        formData.append(
+          'file',
+          blob,
+          'c7-face-check.jpg'
+        )
+
+        const response =
+          await fetch(
+            '/eye-api/process-frame',
+            {
+              method: 'POST',
+              body: formData,
+            }
+          )
+
+        if (!response.ok) return
+
+        const data =
+          await response.json()
+
+        if (
+          typeof data.face_detected ===
+          'boolean'
+        ) {
+          setFaceDetected(
+            data.face_detected
+          )
+        }
+      } catch (error) {
+        console.error(
+          'C7 face detection error:',
+          error
+        )
+      } finally {
+        processingRef.current = false
+      }
+    }
+
+    const interval =
+      setInterval(
+        checkFace,
+        500
+      )
+
+    return () => {
+      active = false
+      clearInterval(interval)
+    }
+  }, [cameraReady])
+
+  // ─────────────────────────────────────
+  // Blink detection
+  // ─────────────────────────────────────
+  useEffect(() => {
+    const checkBlink = async () => {
+      try {
+        const response =
+          await fetch(
+            '/eye-api/gaze-state'
+          )
+
+        if (!response.ok) return
+
+        const data =
+          await response.json()
+
+        const blink =
+          data.blink === true
+
+        const now =
+          performance.now()
+
+        // بدأ إغلاق العين
+        if (
+          blink &&
+          !lastBlinkValueRef.current
+        ) {
+          blinkStartRef.current =
+            now
+
+          beepedSecondsRef.current =
+            []
+
+          setCounting(null)
+
+          console.log(
+            'C7: BLINK START'
+          )
+        }
+
+        // العين ما زالت مغلقة
+        if (
+          blink &&
+          blinkStartRef.current !== null &&
+          !completedRef.current
+        ) {
+          const elapsed =
+            (now -
+              blinkStartRef.current) /
+            1000
+
+          for (
+            const second of [1, 2, 3]
+          ) {
+            if (
+              elapsed >= second &&
+              !beepedSecondsRef.current.includes(
+                second
+              )
+            ) {
+              beepedSecondsRef.current.push(
+                second
+              )
+
+              playBeep()
+
+              console.log(
+                `C7: ${second} SECOND`
+              )
+
+              if (second === 2) {
+                setCounting('yes')
+              }
+
+              if (second === 3) {
+                setCounting('no')
+              }
+            }
+          }
+        }
+
+        // العين انفتحت
+        if (
+          !blink &&
+          lastBlinkValueRef.current
+        ) {
+          if (
+            blinkStartRef.current !==
+              null &&
+            !completedRef.current
+          ) {
+            const duration =
+              (now -
+                blinkStartRef.current) /
+              1000
+
+            console.log(
+              'C7: BLINK END',
+              duration
+            )
+
+            if (
+              duration >= 2 &&
+              duration < 3
+            ) {
+              completedRef.current =
+                true
+
+              setChoice('yes')
+              setCounting(null)
+
+              console.log(
+                'C7: YES'
+              )
+
+              setTimeout(
+                onNext,
+                300
+              )
+            } else if (
+              duration >= 3
+            ) {
+              completedRef.current =
+                true
+
+              setChoice('no')
+              setCounting(null)
+
+              console.log(
+                'C7: NO'
+              )
+            }
+          }
+
+          blinkStartRef.current =
+            null
+
+          beepedSecondsRef.current =
+            []
+        }
+
+        lastBlinkValueRef.current =
+          blink
+      } catch (error) {
+        console.error(
+          'C7 blink state error:',
+          error
+        )
+      }
+    }
+
+    const interval =
+      setInterval(
+        checkBlink,
+        100
+      )
+
+    return () => {
+      clearInterval(interval)
+    }
+  }, [onNext])
 
   const summary = [
-    [t('final.patient'), 'Mohammed Al-Rashidi'],
-    [t('pid.mrn'), 'MRN-2026-45821'],
-    [t('final.procedure'), procedure],
-    [t('final.signature'), 'Eye Signature — Completed'],
-    [t('final.datetime'), '24 Sep 2026 · 19:56'],
-    [t('final.type'), 'Digital Eye Signature — KSUMC'],
+    [
+      t('final.patient'),
+      'Mohammed Al-Rashidi',
+    ],
+    [
+      t('pid.mrn'),
+      'MRN-2026-45821',
+    ],
+    [
+      t('final.procedure'),
+      procedure,
+    ],
+    [
+      t('final.signature'),
+      'Eye Signature — Completed',
+    ],
+    [
+      t('final.datetime'),
+      '24 Sep 2026 · 19:56',
+    ],
+    [
+      t('final.type'),
+      'Digital Eye Signature — KSUMC',
+    ],
   ]
 
   return (
     <ScreenContainer>
-      <ScreenTitle title={t('final.title')} subtitle={t('final.subtitle')} />
+      <ScreenTitle
+        title={t('final.title')}
+        subtitle={t('final.subtitle')}
+      />
 
-      <Card style={{ marginBottom: 20 }}>
-        <h3 style={{ fontFamily: 'Plus Jakarta Sans, Cairo', fontWeight: 700, fontSize: 14, color: theme.text, marginBottom: 14 }}>{t('final.summary')}</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
-          {summary.map(([k, v]) => (
-            <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', background: theme.primaryLight, borderRadius: 10 }}>
-              <span style={{ fontFamily: 'Inter', fontSize: 12, color: theme.textMuted, minWidth: 110 }}>{k}</span>
-              <span style={{ fontFamily: 'Plus Jakarta Sans, Cairo', fontWeight: 600, fontSize: 13, color: theme.text, flex: 1 }}>{v}</span>
+      {/* Camera preview */}
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          marginBottom: 20,
+        }}
+      >
+        <div
+          style={{
+            width: 220,
+            height: 165,
+            borderRadius: 16,
+            overflow: 'hidden',
+            position: 'relative',
+            background: '#050510',
+            border:
+              `2px solid ${
+                faceDetected === true
+                  ? '#16a34a'
+                  : faceDetected === false
+                    ? '#EF4444'
+                    : theme.border
+              }`,
+            boxShadow:
+              '0 4px 16px rgba(0,0,0,0.15)',
+          }}
+        >
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              transform: 'scaleX(-1)',
+            }}
+          />
+
+          {!cameraReady && (
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontSize: 12,
+                fontFamily:
+                  'Inter, Cairo',
+              }}
+            >
+              Starting camera...
             </div>
-          ))}
+          )}
         </div>
 
-        <div style={{ height: 1, background: theme.border, marginBottom: 18 }} />
+        {/* Face status */}
+        <div
+          style={{
+            marginTop: 8,
+            fontFamily:
+              'Plus Jakarta Sans, Cairo',
+            fontWeight: 700,
+            fontSize: 13,
+            color:
+              faceDetected === true
+                ? '#15803d'
+                : faceDetected === false
+                  ? '#B91C1C'
+                  : theme.textMuted,
+          }}
+        >
+          {faceDetected === true
+            ? '🟢 Face detected'
+            : faceDetected === false
+              ? '🔴 No face detected'
+              : '⚪ Detecting face...'}
+        </div>
+      </div>
 
-        <h3 style={{ fontFamily: 'Plus Jakarta Sans, Cairo', fontWeight: 700, fontSize: 15, color: theme.text, marginBottom: 14 }}>
+      {/* Signature summary */}
+      <Card
+        style={{
+          marginBottom: 20,
+        }}
+      >
+        <h3
+          style={{
+            fontFamily:
+              'Plus Jakarta Sans, Cairo',
+            fontWeight: 700,
+            fontSize: 14,
+            color: theme.text,
+            marginBottom: 14,
+          }}
+        >
+          {t('final.summary')}
+        </h3>
+
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
+            marginBottom: 20,
+          }}
+        >
+          {summary.map(
+            ([k, v]) => (
+              <div
+                key={k}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding:
+                    '9px 12px',
+                  background:
+                    theme.primaryLight,
+                  borderRadius: 10,
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily:
+                      'Inter',
+                    fontSize: 12,
+                    color:
+                      theme.textMuted,
+                    minWidth: 110,
+                  }}
+                >
+                  {k}
+                </span>
+
+                <span
+                  style={{
+                    fontFamily:
+                      'Plus Jakarta Sans, Cairo',
+                    fontWeight: 600,
+                    fontSize: 13,
+                    color:
+                      theme.text,
+                    flex: 1,
+                  }}
+                >
+                  {v}
+                </span>
+              </div>
+            )
+          )}
+        </div>
+
+        <div
+          style={{
+            height: 1,
+            background: theme.border,
+            marginBottom: 18,
+          }}
+        />
+
+        <h3
+          style={{
+            fontFamily:
+              'Plus Jakarta Sans, Cairo',
+            fontWeight: 700,
+            fontSize: 15,
+            color: theme.text,
+            marginBottom: 14,
+          }}
+        >
           {t('perm.final.question')}
         </h3>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
-          <button onClick={() => {}} style={{ background: choice === 'yes' ? '#F0FDF4' : theme.card, border: `2.5px solid ${choice === 'yes' ? '#16a34a' : theme.border}`, borderRadius: 16, padding: '20px 14px', cursor: 'pointer', textAlign: 'center', transition: 'all 0.2s' }}>
-            <div style={{ fontSize: 30, marginBottom: 6 }}>✅</div>
-            <div style={{ fontFamily: 'Plus Jakarta Sans, Cairo', fontWeight: 800, fontSize: 18, color: '#16a34a' }}>{t('perm.yes')}</div>
-            <div style={{ fontFamily: 'Inter, Cairo', fontSize: 11, color: theme.textMuted, marginTop: 4 }}>{t('perm.yes.instruction')}</div>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns:
+              '1fr 1fr',
+            gap: 14,
+            marginBottom: 14,
+          }}
+        >
+          <button
+            onClick={() => {
+              setChoice('yes')
+              setCounting('yes')
+
+              setTimeout(
+                onNext,
+                300
+              )
+            }}
+            style={{
+              background:
+                choice === 'yes'
+                  ? '#F0FDF4'
+                  : theme.card,
+              border:
+                `2.5px solid ${
+                  choice === 'yes'
+                    ? '#16a34a'
+                    : theme.border
+                }`,
+              borderRadius: 16,
+              padding:
+                '20px 14px',
+              cursor: 'pointer',
+              textAlign: 'center',
+            }}
+          >
+            <div
+              style={{
+                fontSize: 30,
+                marginBottom: 6,
+              }}
+            >
+              ✅
+            </div>
+
+            <div
+              style={{
+                fontFamily:
+                  'Plus Jakarta Sans, Cairo',
+                fontWeight: 800,
+                fontSize: 18,
+                color: '#16a34a',
+              }}
+            >
+              {t('perm.yes')}
+            </div>
+
+            <div
+              style={{
+                fontFamily:
+                  'Inter, Cairo',
+                fontSize: 11,
+                color:
+                  theme.textMuted,
+                marginTop: 4,
+              }}
+            >
+              {t(
+                'perm.yes.instruction'
+              )}
+            </div>
           </button>
-          <button onClick={() => {}} style={{ background: choice === 'no' ? theme.dangerLight : theme.card, border: `2.5px solid ${choice === 'no' ? theme.danger : theme.border}`, borderRadius: 16, padding: '20px 14px', cursor: 'pointer', textAlign: 'center', transition: 'all 0.2s' }}>
-            <div style={{ fontSize: 30, marginBottom: 6 }}>❌</div>
-            <div style={{ fontFamily: 'Plus Jakarta Sans, Cairo', fontWeight: 800, fontSize: 18, color: theme.danger }}>{t('perm.no')}</div>
-            <div style={{ fontFamily: 'Inter, Cairo', fontSize: 11, color: theme.textMuted, marginTop: 4 }}>{t('perm.no.instruction')}</div>
+
+          <button
+            onClick={() => {
+              setChoice('no')
+              setCounting('no')
+            }}
+            style={{
+              background:
+                choice === 'no'
+                  ? theme.dangerLight
+                  : theme.card,
+              border:
+                `2.5px solid ${
+                  choice === 'no'
+                    ? theme.danger
+                    : theme.border
+                }`,
+              borderRadius: 16,
+              padding:
+                '20px 14px',
+              cursor: 'pointer',
+              textAlign: 'center',
+            }}
+          >
+            <div
+              style={{
+                fontSize: 30,
+                marginBottom: 6,
+              }}
+            >
+              ❌
+            </div>
+
+            <div
+              style={{
+                fontFamily:
+                  'Plus Jakarta Sans, Cairo',
+                fontWeight: 800,
+                fontSize: 18,
+                color:
+                  theme.danger,
+              }}
+            >
+              {t('perm.no')}
+            </div>
+
+            <div
+              style={{
+                fontFamily:
+                  'Inter, Cairo',
+                fontSize: 11,
+                color:
+                  theme.textMuted,
+                marginTop: 4,
+              }}
+            >
+              {t(
+                'perm.no.instruction'
+              )}
+            </div>
           </button>
         </div>
 
         {counting && (
-          <div className="animate-float-in" style={{ display: 'flex', justifyContent: 'center', padding: '18px', background: counting === 'yes' ? '#F0FDF4' : theme.dangerLight, borderRadius: 14, border: `1px solid ${counting === 'yes' ? '#86EFAC' : '#FECACA'}` }}>
-            <CountdownTimer seconds={counting === 'yes' ? 3 : 5} label={counting === 'yes' ? t('perm.yes.counting') : t('perm.no.counting')} color={counting === 'yes' ? '#16a34a' : theme.danger} />
+          <div
+            className="animate-float-in"
+            style={{
+              display: 'flex',
+              justifyContent:
+                'center',
+              padding: '18px',
+              background:
+                counting === 'yes'
+                  ? '#F0FDF4'
+                  : theme.dangerLight,
+              borderRadius: 14,
+              border:
+                `1px solid ${
+                  counting === 'yes'
+                    ? '#86EFAC'
+                    : '#FECACA'
+                }`,
+            }}
+          >
+            <CountdownTimer
+              seconds={
+                counting === 'yes'
+                  ? 3
+                  : 5
+              }
+              label={
+                counting === 'yes'
+                  ? t(
+                      'perm.yes.counting'
+                    )
+                  : t(
+                      'perm.no.counting'
+                    )
+              }
+              color={
+                counting === 'yes'
+                  ? '#16a34a'
+                  : theme.danger
+              }
+            />
           </div>
         )}
       </Card>
