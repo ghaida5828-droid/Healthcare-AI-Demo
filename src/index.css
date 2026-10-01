@@ -1,0 +1,236 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap');
+@import 'tailwindcss';
+
+/* ── Theme variables ──────────────────────────────────────────────────────── */
+:root {
+  --bg-page: #EFF6FC;
+  --bg-card: #FFFFFF;
+  --bg-card2: #F5FAFE;
+  --text-primary: #0A1929;
+  --text-secondary: #3D5A73;
+  --text-muted: #7A9BB5;
+  --border: #D6EAF8;
+  --primary: #0077B6;
+  --primary-dark: #005f92;
+  --primary-light: #E0F0F8;
+  --primary-text: #FFFFFF;
+  --shadow-card: 0 4px 24px rgba(0,55,110,0.07);
+  --shadow-hover: 0 16px 40px rgba(0,55,110,0.15);
+}
+
+:root[data-theme="dark"] {
+  --bg-page: #060D18;
+  --bg-card: #0E1B2E;
+  --bg-card2: #172438;
+  --text-primary: #EAF4FF;
+  --text-secondary: #8FB4CC;
+  --text-muted: #4E7A99;
+  --border: rgba(0,119,182,0.2);
+  --primary: #38BDF8;
+  --primary-dark: #0077B6;
+  --primary-light: rgba(56,189,248,0.12);
+  --primary-text: #060D18;
+  --shadow-card: 0 4px 24px rgba(0,0,0,0.4);
+  --shadow-hover: 0 16px 40px rgba(0,0,0,0.5);
+}
+
+/* ── Base ─────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  margin: 0;
+  padding: 0;
+}
+
+:lang(ar), [dir="rtl"] {
+  font-family: 'Cairo', 'Inter', sans-serif;
+}
+
+:root[dir="rtl"] body,
+:root[lang="ar"] body {
+  font-family: 'Cairo', sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+[dir="rtl"] h1,
+[dir="rtl"] h2,
+[dir="rtl"] h3,
+[dir="rtl"] h4,
+[dir="rtl"] .font-heading {
+  font-family: 'Cairo', sans-serif;
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,119,182,0.25); border-radius: 2px; }
+
+/* ── Eye animations ── */
+@keyframes pupil-move {
+  0%, 100% { transform: translate(0px, 0px); }
+  20% { transform: translate(8px, -2px); }
+  40% { transform: translate(4px, 5px); }
+  60% { transform: translate(-8px, 2px); }
+  80% { transform: translate(-3px, -5px); }
+}
+
+@keyframes eye-blink {
+  0%, 80%, 100% { transform: scaleY(1); }
+  88% { transform: scaleY(0.06); }
+}
+
+@keyframes pulse-ring-blue {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+@keyframes pulse-ring-red {
+  0% { transform: scale(1); opacity: 0.7; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+@keyframes dot-path-1 {
+  0%, 100% { transform: scale(1); background: rgba(0,119,182,0.2); }
+  12.5% { transform: scale(1.5); background: #0077B6; box-shadow: 0 0 12px rgba(0,119,182,0.7); }
+  25% { transform: scale(1); background: rgba(0,119,182,0.2); }
+}
+@keyframes dot-path-2 {
+  0%, 25%, 100% { transform: scale(1); background: rgba(0,119,182,0.2); }
+  37.5% { transform: scale(1.5); background: #0077B6; box-shadow: 0 0 12px rgba(0,119,182,0.7); }
+  50% { transform: scale(1); background: rgba(0,119,182,0.2); }
+}
+@keyframes dot-path-3 {
+  0%, 50%, 100% { transform: scale(1); background: rgba(0,119,182,0.2); }
+  62.5% { transform: scale(1.5); background: #0077B6; box-shadow: 0 0 12px rgba(0,119,182,0.7); }
+  75% { transform: scale(1); background: rgba(0,119,182,0.2); }
+}
+@keyframes dot-path-4 {
+  0%, 75%, 100% { transform: scale(1); background: rgba(0,119,182,0.2); }
+  87.5% { transform: scale(1.5); background: #0077B6; box-shadow: 0 0 12px rgba(0,119,182,0.7); }
+}
+@keyframes dot-path-5 {
+  0%, 87.5% { transform: scale(1); background: rgba(0,119,182,0.2); }
+  100% { transform: scale(1.5); background: #0077B6; box-shadow: 0 0 12px rgba(0,119,182,0.7); }
+}
+
+@keyframes em-dot-1 {
+  0%, 100% { transform: scale(1); background: rgba(220,38,38,0.2); }
+  20% { transform: scale(1.6); background: #DC2626; box-shadow: 0 0 14px rgba(220,38,38,0.7); }
+  40% { transform: scale(1); background: rgba(220,38,38,0.2); }
+}
+@keyframes em-dot-2 {
+  0%, 40%, 100% { transform: scale(1); background: rgba(220,38,38,0.2); }
+  65% { transform: scale(1.6); background: #DC2626; box-shadow: 0 0 14px rgba(220,38,38,0.7); }
+  80% { transform: scale(1); background: rgba(220,38,38,0.2); }
+}
+
+@keyframes draw-path {
+  from { stroke-dashoffset: 900; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes cursor-follow {
+  0% { left: 8%; top: 50%; }
+  16% { left: 25%; top: 28%; }
+  33% { left: 42%; top: 58%; }
+  50% { left: 60%; top: 32%; }
+  66% { left: 76%; top: 55%; }
+  83% { left: 88%; top: 38%; }
+  100% { left: 8%; top: 50%; }
+}
+
+@keyframes cursor-follow-em {
+  0% { left: 15%; top: 50%; }
+  40% { left: 50%; top: 38%; }
+  80% { left: 82%; top: 52%; }
+  100% { left: 15%; top: 50%; }
+}
+
+@keyframes countdown-ring {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: 283; }
+}
+
+@keyframes countdown-5s {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: 283; }
+}
+
+@keyframes checkmark {
+  from { stroke-dashoffset: 80; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes float-in {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes scan-line {
+  0% { top: 0%; opacity: 0.7; }
+  100% { top: 100%; opacity: 0; }
+}
+
+@keyframes face-ring {
+  0%, 100% { border-color: rgba(0,119,182,0.5); box-shadow: 0 0 0 0 rgba(0,119,182,0); }
+  50% { border-color: #0077B6; box-shadow: 0 0 0 8px rgba(0,119,182,0.1); }
+}
+
+@keyframes badge-pop {
+  0% { transform: scale(0); opacity: 0; }
+  70% { transform: scale(1.15); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes progress-bar {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* ── Animation classes ────────────────────────────────────────────────────── */
+.animate-float-in { animation: float-in 0.5s ease-out forwards; }
+.animate-pupil { animation: pupil-move 3.5s ease-in-out infinite; }
+.animate-eye-blink { animation: eye-blink 4s infinite; }
+.animate-pulse-ring { animation: pulse-ring-blue 1.8s ease-out infinite; }
+.animate-pulse-ring-red { animation: pulse-ring-red 1.4s ease-out infinite; }
+.animate-draw-path { animation: draw-path 4s linear forwards; }
+.animate-cursor { animation: cursor-follow 5s ease-in-out infinite; }
+.animate-cursor-em { animation: cursor-follow-em 3.5s ease-in-out infinite; }
+.animate-progress { animation: progress-bar 3s linear forwards; }
+.animate-countdown-3s { animation: countdown-ring 3s linear forwards; }
+.animate-countdown-5s { animation: countdown-5s 5s linear forwards; }
+.animate-checkmark { animation: checkmark 0.7s ease-out forwards; }
+.animate-scan { animation: scan-line 2s linear infinite; }
+.animate-face-ring { animation: face-ring 1.8s ease-in-out infinite; }
+.animate-badge-pop { animation: badge-pop 0.5s cubic-bezier(0.175,0.885,0.32,1.275) forwards; }
+.animate-spin { animation: spin 1s linear infinite; }
+
+.dot-1 { animation: dot-path-1 4s ease-in-out infinite; }
+.dot-2 { animation: dot-path-2 4s ease-in-out infinite; }
+.dot-3 { animation: dot-path-3 4s ease-in-out infinite; }
+.dot-4 { animation: dot-path-4 4s ease-in-out infinite; }
+.dot-5 { animation: dot-path-5 4s ease-in-out infinite; }
+.em-dot-1 { animation: em-dot-1 3s ease-in-out infinite; }
+.em-dot-2 { animation: em-dot-2 3s ease-in-out infinite; }
+
+.stroke-dash-path {
+  stroke-dasharray: 900;
+  stroke-dashoffset: 900;
+}
+
+.card-hover {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.card-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.14);
+}

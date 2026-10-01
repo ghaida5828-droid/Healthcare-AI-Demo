@@ -1,0 +1,10 @@
+{
+  "description": "Enables patients to securely sign medical consents using eye movements via device cameras, streamlining consent in emergency and clinical settings.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
