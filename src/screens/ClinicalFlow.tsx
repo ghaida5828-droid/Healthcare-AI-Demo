@@ -460,7 +460,7 @@ const verifyFace = async () => {
 
     // إرسال الصورة إلى Python
     const response = await fetch(
-  '/face-api/verify-face',
+  'https://healthcare-ai-face-api.onrender.com/verify-face',
       {
         method: 'POST',
         body: formData,
