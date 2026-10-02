@@ -957,7 +957,7 @@ function C4Permission({
         )
 
         const response = await fetch(
-          '/eye-api/process-frame',
+          'https://healthcare-ai-eye-api.onrender.com/process-frame',
           {
             method: 'POST',
             body: formData,
@@ -1526,7 +1526,7 @@ setEyeDebug(`BLOB OK | size=${blob.size}`)
       formData.append('file', blob, 'eye-frame.jpg')
 
       const response = await fetch(
-  '/eye-api/process-frame',
+  'https://healthcare-ai-eye-api.onrender.com/process-frame',
   {
     method: 'POST',
           body: formData,
@@ -2223,7 +2223,7 @@ function C7FinalConfirmation({
 
         const response =
           await fetch(
-            '/eye-api/process-frame',
+            'https://healthcare-ai-eye-api.onrender.com/process-frame',
             {
               method: 'POST',
               body: formData,
