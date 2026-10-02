@@ -54,7 +54,7 @@ const isRTL = dir === 'rtl'
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
 
           {/* Emergency */}
-          <button
+          {/* <button
             onClick={onEmergency}
             className="card-hover"
             style={{
@@ -113,7 +113,7 @@ const isRTL = dir === 'rtl'
                 </svg>
               </div>
             </div>
-          </button>
+          </button> */}
 
           {/* Clinical */}
           <button
