@@ -957,7 +957,7 @@ function C4Permission({
         )
 
         const response = await fetch(
-          '/eye-api/process-frame'
+          'https://healthcare-ai-eye-api.onrender.com/process-frame'
           ,
           {
             method: 'POST',
@@ -1537,7 +1537,7 @@ setEyeDebug(`BLOB OK | size=${blob.size}`)
       formData.append('file', blob, 'eye-frame.jpg')
 
       const response = await fetch(
-  '/eye-api/process-frame',
+  'https://healthcare-ai-eye-api.onrender.com/process-frame',
   {
     method: 'POST',
           body: formData,
@@ -1973,7 +1973,9 @@ useEffect(() => {
   useEffect(() => {
   const fetchEyeState = async () => {
     try {
-      const response = await fetch('/eye-api/gaze-state')
+      const response = await fetch(
+  'https://healthcare-ai-eye-api.onrender.com/gaze-state'
+)
 
       if (!response.ok) {
         throw new Error(`Eye API error: ${response.status}`)
@@ -2479,7 +2481,7 @@ function C7FinalConfirmation({
         // Use the exact same live-frame endpoint as C4.
         // Do not use /gaze-state for long-closure timing.
         const response = await fetch(
-          '/eye-api/process-frame',
+          'https://healthcare-ai-eye-api.onrender.com/process-frame',
           {
             method: 'POST',
             body: formData,
