@@ -957,7 +957,8 @@ function C4Permission({
         )
 
         const response = await fetch(
-          'https://healthcare-ai-eye-api.onrender.com/process-frame',
+          'https://healthcare-ai-eye-api.onrender.com/process-frame'
+          ,
           {
             method: 'POST',
             body: formData,
