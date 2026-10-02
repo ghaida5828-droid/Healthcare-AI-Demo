@@ -19,37 +19,62 @@ import {
 type CStep = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7
 
 interface Props { onBack: () => void }
-
 export default function ClinicalFlow({ onBack }: Props) {
-//   const { t } = useApp()
-//   const [step, setStep] = useState<CStep>(0)
-//   const [procedure, setProcedure] = useState('')
-//   const [hasFaceImage, setHasFaceImage] = useState<boolean | null>(null)
-//   const next = () => setStep((s) => Math.min(s + 1, 7) as CStep)
+  const { t } = useApp()
+  const [step, setStep] = useState<CStep>(0)
+  const [procedure, setProcedure] = useState('')
 
-//   const screens: Record<CStep, React.ReactNode> = {
-//     0: <C1PatientId onNext={next} />,
-//     1: <C2FaceVerification onNext={next} hasFaceImage={hasFaceImage} setHasFaceImage={setHasFaceImage} />,
-//     2: <C3Procedure onNext={next} procedure={procedure} setProcedure={setProcedure} />,
-//    3: <C4Permission
-//      onNext={next}
-//      onDecline={onBack}
-//      instance="pre-sign"
-//     />,
-//     4: <C5ConsentForm onNext={next} procedure={procedure || 'Endoscopy'} />,
-//     5: <C6Signature onNext={next} />,
-//     6: <C7FinalConfirmation onNext={next} procedure={procedure || 'Endoscopy'} />,
-//     7: <C8Record onBack={onBack} procedure={procedure || 'Endoscopy'} />,
-//   }
+  const next = () => setStep((s) => Math.min(s + 1, 6) as CStep)
 
-//   return (
-//     <PageShell>
-//       <Header mode="clinical" onBack={onBack} step={step} totalSteps={8} flowLabel="Clinical Mode" />
-//       {screens[step]}
-//     </PageShell>
-//   )
-// }
+  const screens: Record<number, React.ReactNode> = {
+    0: <C1PatientId onNext={next} />,
 
+    // Face Verification is temporarily skipped.
+    1: (
+      <C4Permission
+        onNext={next}
+        onDecline={onBack}
+        instance="pre-sign"
+      />
+    ),
+
+    2: (
+      <C5ConsentForm
+        onNext={next}
+        procedure={procedure || 'Endoscopy'}
+      />
+    ),
+
+    3: <C6Signature onNext={next} />,
+
+    4: (
+      <C7FinalConfirmation
+        onNext={next}
+        procedure={procedure || 'Endoscopy'}
+      />
+    ),
+
+    5: (
+      <C8Record
+        onBack={onBack}
+        procedure={procedure || 'Endoscopy'}
+      />
+    ),
+  }
+
+  return (
+    <PageShell>
+      <Header
+        mode="clinical"
+        onBack={onBack}
+        step={step}
+        totalSteps={6}
+        flowLabel="Clinical Mode"
+      />
+      {screens[step]}
+    </PageShell>
+  )
+}
 // ─── C1: Patient Identification ────────────────────────────────────────────────
 function C1PatientId({ onNext }: { onNext: () => void }) {
   const { t, theme } = useApp()
@@ -2890,4 +2915,5 @@ function C8Record({ onBack, procedure }: { onBack: () => void; procedure: string
       <BigButton onClick={onBack} variant="primary">{t('record.home')}</BigButton>
     </ScreenContainer>
   )
-}}
+}
+
