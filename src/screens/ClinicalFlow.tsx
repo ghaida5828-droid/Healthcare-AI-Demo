@@ -957,7 +957,7 @@ function C4Permission({
         )
 
         const response = await fetch(
-          'https://healthcare-ai-eye-api.onrender.com/process-frame'
+          '/eye-api/process-frame'
           ,
           {
             method: 'POST',
@@ -1427,6 +1427,16 @@ const [calibrationResults, setCalibrationResults] = useState<
 const [detectedPoint, setDetectedPoint] = useState<number | null>(null)
 const candidatePointRef = useRef<number | null>(null)
 const candidateCountRef = useRef(0)
+const signatureTargetPointRef = useRef<number | null>(null)
+
+// Double blink detection
+const signatureLastBlinkStateRef = useRef(false)
+const signatureFirstBlinkTimeRef = useRef<number | null>(null)
+const signatureBlinkCountRef = useRef(0)
+const signatureBlinkLockedRef = useRef(false)
+const verificationCodeRef = useRef<number[]>([])
+const confirmedPointsRef = useRef<number[]>([])
+const nextExpectedIndexRef = useRef(0)
 const lastCalibrationSampleTimeRef = useRef(0)
 const calibrationPointStartTimeRef = useRef(Date.now())
 
@@ -1527,7 +1537,7 @@ setEyeDebug(`BLOB OK | size=${blob.size}`)
       formData.append('file', blob, 'eye-frame.jpg')
 
       const response = await fetch(
-  'https://healthcare-ai-eye-api.onrender.com/process-frame',
+  '/eye-api/process-frame',
   {
     method: 'POST',
           body: formData,
@@ -1542,106 +1552,306 @@ setEyeDebug(`FETCH DONE | status=${response.status}`)
 )
 
       console.log('Web Eye:', data)
-//       if (
-//   calibrationStarted &&
-//   data.face_detected === true &&
-//   data.eye_spheres_calibrated === true &&
-//   data.blink === false &&
-//   typeof data.raw_yaw === 'number' &&
-//   typeof data.raw_pitch === 'number'
-// ) {
+      console.log('CAL DEBUG:', {
+      calibrationStarted,
+      face: data.face_detected,
+      spheres: data.eye_spheres_calibrated,
+      blink: data.blink,
+      yaw: data.raw_yaw,
+      yawType: typeof data.raw_yaw,
+      pitch: data.raw_pitch,
+      pitchType: typeof data.raw_pitch,
+    })
+      if (
+  calibrationStarted &&
+  data.face_detected === true &&
+  data.eye_spheres_calibrated === true &&
+  // data.blink === false &&
+  typeof data.raw_yaw === 'number' &&
+  typeof data.raw_pitch === 'number'
+) {
 //   if (
 //   Date.now() - calibrationPointStartTimeRef.current < 1500
 // ) {
 //   return
 // }
-//   const now = Date.now()
+  const now = Date.now()
 
-// if (now - lastCalibrationSampleTimeRef.current < 150) {
-//   return
-// }
+if (now - lastCalibrationSampleTimeRef.current < 150) {
+  return
+}
 
-// lastCalibrationSampleTimeRef.current = now
-//   setCalibrationSamples((previousSamples) => {
-//     const newSamples = [
-//       ...previousSamples,
-//       {
-//         yaw: data.raw_yaw,
-//         pitch: data.raw_pitch,
-//       },
-//     ]
+lastCalibrationSampleTimeRef.current = now
+  setCalibrationSamples((previousSamples) => {
+    const newSamples = [
+      ...previousSamples,
+      {
+        yaw: data.raw_yaw,
+        pitch: data.raw_pitch,
+      },
+    ]
 
-//     return newSamples
-//   })
-// }
-// if (
-//   !calibrationStarted &&
-//   data.face_detected === true &&
-//   data.eye_spheres_calibrated === true &&
-//   typeof data.raw_yaw === 'number' &&
-//   typeof data.raw_pitch === 'number' &&
-//   Object.keys(calibrationResults).length === 4
-// ) {
-//   const distances = Object.entries(calibrationResults).map(
-//     ([pointNumber, position]) => {
-//       const yawDifference =
-//         data.raw_yaw - position.yaw
+    return newSamples
+  })
+}if (
+  !calibrationStarted &&
+  data.face_detected === true &&
+  data.eye_spheres_calibrated === true &&
+  typeof data.raw_yaw === 'number' &&
+  typeof data.raw_pitch === 'number' &&
+  Object.keys(calibrationResults).length === 4
+) {
+  const distances = Object.entries(calibrationResults).map(
+    ([pointNumber, position]) => {
+      const yawDifference =
+        data.raw_yaw - position.yaw
 
-//       const pitchDifference =
-//         data.raw_pitch - position.pitch
+      const pitchDifference =
+        data.raw_pitch - position.pitch
 
-//       const distance = Math.sqrt(
-//         yawDifference * yawDifference +
-//         pitchDifference * pitchDifference
-//       )
+      const distance = Math.sqrt(
+        yawDifference * yawDifference +
+        pitchDifference * pitchDifference
+      )
 
-//       return {
-//         point: Number(pointNumber),
-//         distance,
-//       }
-//     }
-//   )
+      return {
+        point: Number(pointNumber),
+        distance,
+      }
+    }
+  )
 
-//   distances.sort((a, b) => a.distance - b.distance)
+  distances.sort((a, b) => a.distance - b.distance)
 
-// const best = distances[0]
-// const second = distances[1]
+  const best = distances[0]
+  const second = distances[1]
 
-// let closestPoint: number | null = null
+  let closestPoint: number | null = null
 
-// if (best && second && second.distance > 0) {
-//   const confidenceRatio =
-//     best.distance / second.distance
+  if (best && second && second.distance > 0) {
+    const confidenceRatio =
+      best.distance / second.distance
 
-//   // كلما كانت القيمة أصغر،
-//   // كانت النقطة الأولى أوضح من الثانية
-//   if (confidenceRatio <= 0.75) {
-//     closestPoint = best.point
-//   }
-// }
+    if (confidenceRatio <= 0.75) {
+      closestPoint = best.point
+    }
+  }
 
-// if (closestPoint !== null) {
+  if (closestPoint !== null) {
+    if (candidatePointRef.current === closestPoint) {
+      candidateCountRef.current += 1
+    } else {
+      candidatePointRef.current = closestPoint
+      candidateCountRef.current = 1
+    }
 
-//   if (candidatePointRef.current === closestPoint) {
-//     candidateCountRef.current += 1
-//   } else {
-//     candidatePointRef.current = closestPoint
-//     candidateCountRef.current = 1
-//   }
+    // نعتمدها فقط بعد 5 قراءات متتالية
+    if (candidateCountRef.current >= 5) {
+      setDetectedPoint(closestPoint)
 
-//   // لازم نفس النقطة تظهر 5 قراءات متتالية
-//   // قبل ما نعتمدها
-//   if (candidateCountRef.current >= 5) {
-//     setDetectedPoint(closestPoint)
+      console.log(
+        'STABLE POINT:',
+        closestPoint
+      )
+    }
+  } else {
+    // إذا النظرة ليست واضحة على أي دائرة
+    candidatePointRef.current = null
+    candidateCountRef.current = 0
+    setDetectedPoint(null)
+  }
+}
+// ===== C6: confirm selected gaze point by DOUBLE BLINK =====
 
-//     console.log(
-//       'STABLE POINT:',
-//       closestPoint
-//     )
-//   }
-// }
-// }
+if (
+  !calibrationStarted &&
+  Object.keys(calibrationResults).length === 4
+) {
+  const isEyeClosed = data.blink === true
+  console.log(
+  'C6 BLINK CHECK:',
+  data.blink,
+  'TARGET:',
+  signatureTargetPointRef.current
+)
+  const wasEyeClosed = signatureLastBlinkStateRef.current
+  const now = Date.now()
 
+  // نحفظ آخر دائرة ثابتة فقط والعين مفتوحة
+  if (
+  !isEyeClosed &&
+  candidateCountRef.current >= 5 &&
+  candidatePointRef.current !== null
+) {
+  signatureTargetPointRef.current =
+    candidatePointRef.current
+}
+
+  // Rising edge:
+  // نحسب الرمشة مرة واحدة فقط عند الانتقال من مفتوح -> مغلق
+  const newBlinkStarted =
+    isEyeClosed && !wasEyeClosed
+
+  if (
+    newBlinkStarted &&
+    !signatureBlinkLockedRef.current &&
+    signatureTargetPointRef.current !== null
+  ) {
+    const firstBlinkTime =
+      signatureFirstBlinkTimeRef.current
+
+    // أول رمشة
+    if (
+      signatureBlinkCountRef.current === 0 ||
+      firstBlinkTime === null ||
+      now - firstBlinkTime > 750
+    ) {
+      signatureBlinkCountRef.current = 1
+      signatureFirstBlinkTimeRef.current = now
+
+      console.log(
+        'C6 FIRST BLINK — TARGET:',
+        signatureTargetPointRef.current
+      )
+    }
+
+    // الرمشة الثانية جاءت خلال 1.2 ثانية
+    else {
+      signatureBlinkCountRef.current = 2
+
+      const confirmedPoint =
+        signatureTargetPointRef.current
+
+      console.log(
+        'C6 DOUBLE BLINK CONFIRMED:',
+        confirmedPoint
+      )
+      const expectedIndex =
+  nextExpectedIndexRef.current
+
+const expectedPoint =
+  verificationCodeRef.current[expectedIndex]
+
+console.log(
+  'C6 CHECK:',
+  {
+    lookedAt: confirmedPoint,
+    expected: expectedPoint,
+    index: expectedIndex,
+  }
+)
+
+if (confirmedPoint === expectedPoint) {
+  // النقطة صحيحة
+  const newConfirmedPoints = [
+    ...confirmedPointsRef.current,
+    confirmedPoint,
+  ]
+
+  confirmedPointsRef.current =
+    newConfirmedPoints
+
+  setConfirmedPoints(newConfirmedPoints)
+
+  const newIndex = expectedIndex + 1
+
+  nextExpectedIndexRef.current = newIndex
+
+  const newProgress =
+    (newConfirmedPoints.length / 4) * 100
+
+  setProgress(newProgress)
+
+  // هل انتهت الأربع نقاط؟
+  if (
+    newIndex >=
+    verificationCodeRef.current.length
+  ) {
+    setNextExpected(null)
+    setDone(true)
+    setProgress(100)
+
+    console.log(
+      'C6 SIGNATURE VERIFIED:',
+      newConfirmedPoints
+    )
+  } else {
+    const nextPoint =
+      verificationCodeRef.current[newIndex]
+
+    setNextExpected(nextPoint)
+
+    console.log(
+      'C6 NEXT EXPECTED:',
+      nextPoint
+    )
+  }
+} else {
+  // رمشتين صحيحتين لكن على دائرة غير المطلوبة
+  console.log(
+    'C6 WRONG POINT:',
+    {
+      lookedAt: confirmedPoint,
+      expected: expectedPoint,
+    }
+  )
+}
+      // نقفل مؤقتًا حتى لا تتكرر عملية التأكيد
+      signatureBlinkLockedRef.current = true
+      signatureBlinkCountRef.current = 0
+      signatureFirstBlinkTimeRef.current = null
+
+      // صوت واحد فقط عند نجاح الرمشتين
+      try {
+        const audioContext = new AudioContext()
+        const oscillator =
+          audioContext.createOscillator()
+        const gain =
+          audioContext.createGain()
+
+        oscillator.connect(gain)
+        gain.connect(audioContext.destination)
+
+        oscillator.frequency.value = 880
+        gain.gain.value = 0.15
+
+        oscillator.start()
+
+        setTimeout(() => {
+          oscillator.stop()
+          audioContext.close()
+        }, 180)
+      } catch (error) {
+        console.log(
+          'C6 confirmation sound error:',
+          error
+        )
+      }
+
+      // بعد فترة قصيرة نسمح باختيار الدائرة التالية
+      setTimeout(() => {
+        signatureBlinkLockedRef.current = false
+        signatureTargetPointRef.current = null
+      }, 700)
+    }
+  }
+
+  // إذا مر وقت طويل بعد أول رمشة بدون الثانية
+  // نلغي المحاولة ونبدأ من جديد
+  if (
+    signatureBlinkCountRef.current === 1 &&
+    signatureFirstBlinkTimeRef.current !== null &&
+    now - signatureFirstBlinkTimeRef.current > 750
+  ) {
+    signatureBlinkCountRef.current = 0
+    signatureFirstBlinkTimeRef.current = null
+
+    console.log('C6 DOUBLE BLINK TIMEOUT')
+  }
+
+  // مهم جدًا: نحفظ حالة العين الحالية لنعرف بداية الرمشة التالية
+  signatureLastBlinkStateRef.current = isEyeClosed
+}
     } catch (error) {
       console.error('Web Eye frame error:', error)
     }
@@ -1651,65 +1861,115 @@ setEyeDebug(`FETCH DONE | status=${response.status}`)
 
   return () => clearInterval(interval)
 }, [cameraReady, calibrationStarted, calibrationResults])
-// useEffect(() => {
-//   if (!calibrationStarted) return
-//   console.log(
-//   'CALIBRATION SAMPLES:',
-//   calibrationPoint,
-//   calibrationSamples.length
-// )
+useEffect(() => {
+  if (!calibrationStarted) return
 
+  console.log(
+    'CALIBRATION SAMPLES:',
+    calibrationPoint,
+    calibrationSamples.length
+  )
 
-//   if (calibrationSamples.length < 40) return
+  // انتظر حتى نجمع 40 عينة للنقطة الحالية
+  if (calibrationSamples.length < 40) return
 
-//   const yawValues = calibrationSamples.map(
-//     (sample) => sample.yaw
-//   )
+  const yawValues = calibrationSamples.map(
+    (sample) => sample.yaw
+  )
 
-//   const pitchValues = calibrationSamples.map(
-//     (sample) => sample.pitch
-//   )
+  const pitchValues = calibrationSamples.map(
+    (sample) => sample.pitch
+  )
 
-//   const sortedYaw = [...yawValues].sort((a, b) => a - b)
-//   const sortedPitch = [...pitchValues].sort((a, b) => a - b)
+  const sortedYaw = [...yawValues].sort(
+    (a, b) => a - b
+  )
 
-//   const middle = Math.floor(sortedYaw.length / 2)
+  const sortedPitch = [...pitchValues].sort(
+    (a, b) => a - b
+  )
 
-//   const medianYaw = sortedYaw[middle]
-//   const medianPitch = sortedPitch[middle]
+  const middle = Math.floor(
+    sortedYaw.length / 2
+  )
 
-//   console.log(
-//     `CALIBRATION POINT ${calibrationPoint}:`,
-//     {
-//       yaw: medianYaw,
-//       pitch: medianPitch,
-//     }
-//   )
+  const medianYaw = sortedYaw[middle]
+  const medianPitch = sortedPitch[middle]
 
-//   setCalibrationResults((previous) => ({
-//     ...previous,
-//     [calibrationPoint]: {
-//       yaw: medianYaw,
-//       pitch: medianPitch,
-//     },
-//   }))
+  console.log(
+    `CALIBRATION POINT ${calibrationPoint} COMPLETE:`,
+    {
+      yaw: medianYaw,
+      pitch: medianPitch,
+      samples: calibrationSamples.length,
+    }
+  )
 
-//   setCalibrationSamples([])
+  setCalibrationResults((previous) => ({
+    ...previous,
+    [calibrationPoint]: {
+      yaw: medianYaw,
+      pitch: medianPitch,
+    },
+  }))
 
-//   if (calibrationPoint < 4) {
-//     calibrationPointStartTimeRef.current = Date.now()
-//     lastCalibrationSampleTimeRef.current = 0
-//     setCalibrationPoint((previous) => previous + 1)
-//   } else {
-//     setCalibrationStarted(false)
+  // نفرغ العينات استعدادًا للنقطة التالية
+  setCalibrationSamples([])
 
-//     console.log('CALIBRATION COMPLETE')
-//   }
-// }, [
-//   calibrationSamples,
-//   calibrationPoint,
-//   calibrationStarted,
-// ])
+  if (calibrationPoint < 4) {
+    calibrationPointStartTimeRef.current = Date.now()
+    lastCalibrationSampleTimeRef.current = 0
+
+    setCalibrationPoint(
+      (previous) => previous + 1
+    )
+  } else {
+    setCalibrationStarted(false)
+
+    console.log('CALIBRATION COMPLETE')
+  }
+}, [
+  calibrationSamples,
+  calibrationPoint,
+  calibrationStarted,
+])
+// Generate a random verification code after calibration is complete
+useEffect(() => {
+  if (calibrationStarted) return
+  if (Object.keys(calibrationResults).length !== 4) return
+  if (verificationCode.length > 0) return
+
+  const points = [1, 2, 3, 4]
+
+  // Shuffle the four points
+  for (let i = points.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+
+    const temp = points[i]
+    points[i] = points[j]
+    points[j] = temp
+  }
+
+  verificationCodeRef.current = points
+  confirmedPointsRef.current = []
+  nextExpectedIndexRef.current = 0
+
+  setVerificationCode(points)
+  setConfirmedPoints([])
+  setNextExpected(points[0])
+  setProgress(0)
+  setDone(false)
+
+  console.log(
+    'C6 VERIFICATION CODE:',
+    points
+  )
+}, [
+  calibrationStarted,
+  calibrationResults,
+  verificationCode.length,
+])
+  
   useEffect(() => {
   const fetchEyeState = async () => {
     try {
@@ -1727,18 +1987,18 @@ setEyeDebug(`FETCH DONE | status=${response.status}`)
       }
 
       setEyeConnected(true)
-      setCalibrationStarted(data.phase === 'calibration')
-      setCalibrationPoint(data.current_point ?? 1)
-      setVerificationCode(data.verification_code || [])
-      setConfirmedPoints(data.confirmed_points || [])
-      setNextExpected(data.next_expected ?? null)
+      // setCalibrationStarted(data.phase === 'calibration')
+      // setCalibrationPoint(data.current_point ?? 1)
+      // setVerificationCode(data.verification_code || [])
+      // setConfirmedPoints(data.confirmed_points || [])
+      // setNextExpected(data.next_expected ?? null)
       setCurrentPoint(data.current_point ?? null)
-      setDone(data.verified === true)
+      // setDone(data.verified === true)
 
-      const totalPoints = data.verification_code?.length || 4
-      const completedPoints = data.confirmed_points?.length || 0
+      // const totalPoints = data.verification_code?.length || 4
+      // const completedPoints = data.confirmed_points?.length || 0
 
-      setProgress((completedPoints / totalPoints) * 100)
+      // setProgress((completedPoints / totalPoints) * 100)
 
     } catch (error) {
       console.error('Eye API connection error:', error)
@@ -2027,6 +2287,11 @@ function C7FinalConfirmation({
   const lastBlinkValueRef =
     useRef(false)
 
+  // Ignore very short false readings while the eye is still closed.
+  // MediaPipe can occasionally flicker for a frame during a long closure.
+  const eyeOpenCandidateRef =
+    useRef<number | null>(null)
+
   const beepedSecondsRef =
     useRef<number[]>([])
 
@@ -2148,23 +2413,24 @@ function C7FinalConfirmation({
   }, [])
 
   // ─────────────────────────────────────
-  // Face detection
+  // Live face + blink detection
   // ─────────────────────────────────────
   useEffect(() => {
     if (!cameraReady) return
 
     let active = true
 
-    const checkFace = async () => {
+    const checkFrame = async () => {
       if (
+        !active ||
         !videoRef.current ||
-        processingRef.current
+        processingRef.current ||
+        completedRef.current
       ) {
         return
       }
 
-      const video =
-        videoRef.current
+      const video = videoRef.current
 
       if (
         video.videoWidth === 0 ||
@@ -2176,20 +2442,11 @@ function C7FinalConfirmation({
       processingRef.current = true
 
       try {
-        const canvas =
-          document.createElement(
-            'canvas'
-          )
+        const canvas = document.createElement('canvas')
+        canvas.width = video.videoWidth
+        canvas.height = video.videoHeight
 
-        canvas.width =
-          video.videoWidth
-
-        canvas.height =
-          video.videoHeight
-
-        const context =
-          canvas.getContext('2d')
-
+        const context = canvas.getContext('2d')
         if (!context) return
 
         context.drawImage(
@@ -2200,141 +2457,76 @@ function C7FinalConfirmation({
           canvas.height
         )
 
-        const blob =
-          await new Promise<Blob | null>(
-            (resolve) => {
-              canvas.toBlob(
-                resolve,
-                'image/jpeg',
-                0.8
-              )
-            }
-          )
+        const blob = await new Promise<Blob | null>(
+          (resolve) => {
+            canvas.toBlob(
+              resolve,
+              'image/jpeg',
+              0.8
+            )
+          }
+        )
 
         if (!blob || !active) return
 
-        const formData =
-          new FormData()
-
+        const formData = new FormData()
         formData.append(
           'file',
           blob,
-          'c7-face-check.jpg'
+          'c7-blink-frame.jpg'
         )
 
-        const response =
-          await fetch(
-            'https://healthcare-ai-eye-api.onrender.com/process-frame',
-            {
-              method: 'POST',
-              body: formData,
-            }
-          )
+        // Use the exact same live-frame endpoint as C4.
+        // Do not use /gaze-state for long-closure timing.
+        const response = await fetch(
+          '/eye-api/process-frame',
+          {
+            method: 'POST',
+            body: formData,
+          }
+        )
 
         if (!response.ok) return
 
-        const data =
-          await response.json()
+        const data = await response.json()
 
         if (
-          typeof data.face_detected ===
-          'boolean'
+          typeof data.face_detected === 'boolean'
         ) {
-          setFaceDetected(
-            data.face_detected
-          )
-        }
-      } catch (error) {
-        console.error(
-          'C7 face detection error:',
-          error
-        )
-      } finally {
-        processingRef.current = false
-      }
-    }
-
-    const interval =
-      setInterval(
-        checkFace,
-        500
-      )
-
-    return () => {
-      active = false
-      clearInterval(interval)
-    }
-  }, [cameraReady])
-
-  // ─────────────────────────────────────
-  // Blink detection
-  // ─────────────────────────────────────
-  useEffect(() => {
-    const checkBlink = async () => {
-      try {
-        const response =
-          await fetch(
-            '/eye-api/gaze-state'
-          )
-
-        if (!response.ok) return
-
-        const data =
-          await response.json()
-
-        const blink =
-          data.blink === true
-
-        const now =
-          performance.now()
-
-        // بدأ إغلاق العين
-        if (
-          blink &&
-          !lastBlinkValueRef.current
-        ) {
-          blinkStartRef.current =
-            now
-
-          beepedSecondsRef.current =
-            []
-
-          setCounting(null)
-
-          console.log(
-            'C7: BLINK START'
-          )
+          setFaceDetected(data.face_detected)
         }
 
-        // العين ما زالت مغلقة
-        if (
-          blink &&
-          blinkStartRef.current !== null &&
-          !completedRef.current
-        ) {
+        // If there is no face, do not invent an eye-open event.
+        // Wait for a valid face frame again.
+        if (data.face_detected === false) {
+          return
+        }
+
+        const blink = data.blink === true
+        const now = performance.now()
+
+        if (blink) {
+          // A valid closed-eye frame cancels any brief open-eye flicker.
+          eyeOpenCandidateRef.current = null
+
+          if (blinkStartRef.current === null) {
+            blinkStartRef.current = now
+            beepedSecondsRef.current = []
+            setCounting(null)
+            console.log('C7: BLINK START')
+          }
+
           const elapsed =
-            (now -
-              blinkStartRef.current) /
-            1000
+            (now - blinkStartRef.current) / 1000
 
-          for (
-            const second of [1, 2, 3]
-          ) {
+          for (const second of [1, 2, 3]) {
             if (
               elapsed >= second &&
-              !beepedSecondsRef.current.includes(
-                second
-              )
+              !beepedSecondsRef.current.includes(second)
             ) {
-              beepedSecondsRef.current.push(
-                second
-              )
-
+              beepedSecondsRef.current.push(second)
               playBeep()
-
-              console.log(
-                `C7: ${second} SECOND`
-              )
+              console.log(`C7: ${second} SECOND`)
 
               if (second === 2) {
                 setCounting('yes')
@@ -2345,88 +2537,66 @@ function C7FinalConfirmation({
               }
             }
           }
-        }
-
-        // العين انفتحت
-        if (
-          !blink &&
-          lastBlinkValueRef.current
-        ) {
-          if (
-            blinkStartRef.current !==
-              null &&
-            !completedRef.current
-          ) {
-            const duration =
-              (now -
-                blinkStartRef.current) /
-              1000
-
-            console.log(
-              'C7: BLINK END',
-              duration
-            )
-
-            if (
-              duration >= 2 &&
-              duration < 3
-            ) {
-              completedRef.current =
-                true
-
-              setChoice('yes')
-              setCounting(null)
-
-              console.log(
-                'C7: YES'
-              )
-
-              setTimeout(
-                onNext,
-                300
-              )
-            } else if (
-              duration >= 3
-            ) {
-              completedRef.current =
-                true
-
-              setChoice('no')
-              setCounting(null)
-
-              console.log(
-                'C7: NO'
-              )
-            }
+        } else if (blinkStartRef.current !== null) {
+          // Require the eye to remain open for 250 ms before ending the
+          // gesture. This prevents one bad MediaPipe frame from resetting it.
+          if (eyeOpenCandidateRef.current === null) {
+            eyeOpenCandidateRef.current = now
+            return
           }
 
-          blinkStartRef.current =
-            null
+          if (
+            now - eyeOpenCandidateRef.current < 250
+          ) {
+            return
+          }
 
-          beepedSecondsRef.current =
-            []
+          const duration =
+            (eyeOpenCandidateRef.current -
+              blinkStartRef.current) /
+            1000
+
+          console.log('C7: BLINK END', duration)
+
+          if (duration >= 2 && duration < 3) {
+            completedRef.current = true
+            setChoice('yes')
+            setCounting(null)
+            console.log('C7: YES')
+            setTimeout(onNext, 300)
+          } else if (duration >= 3) {
+            completedRef.current = true
+            setChoice('no')
+            setCounting(null)
+            console.log('C7: NO')
+          }
+
+          blinkStartRef.current = null
+          eyeOpenCandidateRef.current = null
+          beepedSecondsRef.current = []
         }
 
-        lastBlinkValueRef.current =
-          blink
+        lastBlinkValueRef.current = blink
       } catch (error) {
         console.error(
-          'C7 blink state error:',
+          'C7 live frame error:',
           error
         )
+      } finally {
+        processingRef.current = false
       }
     }
 
-    const interval =
-      setInterval(
-        checkBlink,
-        100
-      )
+    const interval = setInterval(
+      checkFrame,
+      100
+    )
 
     return () => {
+      active = false
       clearInterval(interval)
     }
-  }, [onNext])
+  }, [cameraReady, onNext])
 
   const summary = [
     [
