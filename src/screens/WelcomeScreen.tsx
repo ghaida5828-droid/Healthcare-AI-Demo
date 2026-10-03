@@ -35,7 +35,7 @@ const isRTL = dir === 'rtl'
   return (
     <PageShell>
       <Header />
-      <div style={{ maxWidth: 760, margin: '0 auto', padding: '32px 24px' }}>
+      <div style={{ maxWidth: 760, margin: '0 auto', padding: '32px 24px'}}>
 
         {/* Hero */}
         <div className="animate-float-in" style={{ textAlign: 'center', marginBottom: 36 }}>
@@ -43,77 +43,16 @@ const isRTL = dir === 'rtl'
             <AnimatedEye size={80} color={theme.primary} />
           </div>
           <h1 style={{ fontFamily: 'Plus Jakarta Sans, Cairo', fontWeight: 800, fontSize: 32, color: theme.text, lineHeight: 1.15, marginBottom: 10 }}>
-            {t('welcome.title')}
+            {t('Patient Journey')}
           </h1>
           <p style={{ fontFamily: 'Inter, Cairo', fontSize: 16, color: theme.textMuted, lineHeight: 1.6, maxWidth: 460, margin: '0 auto' }}>
-            {t('welcome.subtitle')}
+            {t('click to start')}
           </p>
         </div>
 
         {/* Journey cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
-
-          {/* Emergency */}
-          {/* <button
-            onClick={onEmergency}
-            className="card-hover"
-            style={{
-              background: theme.card,
-              borderRadius: 26,
-              border: `2.5px solid #FCA5A5`,
-              padding: 30,
-              cursor: 'pointer',
-              textAlign: 'left',
-              transition: 'all 0.25s ease',
-              boxShadow: isDark ? '0 4px 24px rgba(0,0,0,0.3)' : '0 4px 20px rgba(220,38,38,0.08)',
-            }}
-            onMouseEnter={(e) => {
-              ;(e.currentTarget as HTMLElement).style.borderColor = theme.danger
-              ;(e.currentTarget as HTMLElement).style.boxShadow = '0 12px 40px rgba(220,38,38,0.2)'
-            }}
-            onMouseLeave={(e) => {
-              ;(e.currentTarget as HTMLElement).style.borderColor = '#FCA5A5'
-              ;(e.currentTarget as HTMLElement).style.boxShadow = isDark ? '0 4px 24px rgba(0,0,0,0.3)' : '0 4px 20px rgba(220,38,38,0.08)'
-            }}
-          >
-            <div style={{ width: 64, height: 64, borderRadius: 18, background: 'linear-gradient(135deg, #DC2626 0%, #991B1B 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18, boxShadow: '0 6px 18px rgba(220,38,38,0.35)' }}>
-              <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                <rect x="14" y="4" width="4" height="24" rx="2" fill="white" />
-                <rect x="4" y="14" width="24" height="4" rx="2" fill="white" />
-              </svg>
-            </div>
-
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: theme.dangerLight, border: '1px solid #FECACA', borderRadius: 20, padding: '3px 10px', marginBottom: 12 }}>
-              <div className="animate-pulse-ring-red" style={{ width: 7, height: 7, borderRadius: '50%', background: theme.danger }} />
-              <span style={{ fontFamily: 'Plus Jakarta Sans, Cairo', fontWeight: 700, fontSize: 11, color: theme.danger, letterSpacing: '0.5px', textTransform: 'uppercase' as const }}>
-                {t('welcome.emergency.badge')}
-              </span>
-            </div>
-
-            <h2 style={{ fontFamily: 'Plus Jakarta Sans, Cairo', fontWeight: 800, fontSize: 20, color: theme.text, marginBottom: 8 }}>
-              {t('welcome.emergency.title')}
-            </h2>
-            <p style={{ fontFamily: 'Inter, Cairo', fontSize: 13, color: theme.textMuted, lineHeight: 1.5, marginBottom: 16 }}>
-              {t('welcome.emergency.desc')}
-            </p>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
-              {emergencyChecks(t('welcome.emergency.feat1'))}
-              {emergencyChecks(t('welcome.emergency.feat2'))}
-              {emergencyChecks(t('welcome.emergency.feat3'))}
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontFamily: 'Plus Jakarta Sans, Cairo', fontWeight: 700, fontSize: 13, color: theme.danger }}>
-                {t('welcome.emergency.cta')}
-              </span>
-              <div style={{ width: 32, height: 32, borderRadius: '50%', background: theme.danger, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <path d="M2.5 7h9M8 3.5L11.5 7L8 10.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </div>
-            </div>
-          </button> */}
+        <div style={{ marginBottom: 28  }}>
+ 
 
           {/* Clinical */}
           <button
@@ -128,6 +67,7 @@ const isRTL = dir === 'rtl'
               textAlign: 'left',
               transition: 'all 0.25s ease',
               boxShadow: isDark ? '0 4px 24px rgba(0,0,0,0.3)' : '0 4px 20px rgba(0,119,182,0.06)',
+              display:'center'
             }}
             onMouseEnter={(e) => {
               ;(e.currentTarget as HTMLElement).style.borderColor = theme.primary
@@ -162,7 +102,7 @@ const isRTL = dir === 'rtl'
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
-              {featureCheck(t('welcome.clinical.feat1'))}
+              {/* {featureCheck(t('welcome.clinical.feat1'))} */}
               {featureCheck(t('welcome.clinical.feat2'))}
               {featureCheck(t('welcome.clinical.feat3'))}
               {featureCheck(t('welcome.clinical.feat4'))}

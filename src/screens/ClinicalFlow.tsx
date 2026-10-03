@@ -79,22 +79,25 @@ export default function ClinicalFlow({ onBack }: Props) {
 function C1PatientId({ onNext }: { onNext: () => void }) {
   const { t, theme } = useApp()
   const [nationalId, setNationalId] = useState('')
-  const [mrn, setMrn] = useState('')
-  const [dob, setDob] = useState('')
   const [searching, setSearching] = useState(false)
   const [found, setFound] = useState(false)
 
   const handleSearch = () => {
-    if (!nationalId || !mrn || !dob) return
+    if (!nationalId.trim()) return
+
     setSearching(true)
-    setTimeout(() => { setSearching(false); setFound(true) }, 1600)
+
+    setTimeout(() => {
+      setSearching(false)
+      setFound(true)
+    }, 1600)
   }
 
   const patientData = [
     [t('pid.name'), 'Mohammed Al-Rashidi'],
     [t('pid.id'), nationalId || '1234567890'],
-    [t('pid.mrn'), mrn || 'MRN-2026-45821'],
-    [t('pid.dob'), dob || '14/03/1975'],
+    // [t('pid.mrn'), mrn || 'MRN-2026-45821'],
+    // [t('pid.dob'), dob || '14/03/1975'],
     [t('pid.dept'), 'Gastroenterology'],
     [t('pid.blood'), 'O+'],
   ]
@@ -136,18 +139,21 @@ function C1PatientId({ onNext }: { onNext: () => void }) {
       <Card style={{ marginBottom: 20 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <InputField value={nationalId} onChange={setNationalId} placeholder={t('pid.field.nationalId.placeholder')} label={t('pid.field.nationalId')} icon={PersonIcon} />
-          <InputField value={mrn} onChange={setMrn} placeholder={t('pid.field.mrn.placeholder')} label={t('pid.field.mrn')} icon={DocIcon} />
-          <InputField value={dob} onChange={setDob} placeholder={t('pid.field.dob.placeholder')} label={t('pid.field.dob')} icon={CalIcon} />
 
-          <BigButton onClick={handleSearch} variant="primary" disabled={!nationalId || !mrn || !dob}>
+          <BigButton
+            onClick={handleSearch}
+            variant="primary"
+            disabled={!nationalId.trim()}
+          >
+
             {searching
               ? <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ animation: 'spin 1s linear infinite' }}>
-                    <circle cx="9" cy="9" r="7" stroke="rgba(255,255,255,0.3)" strokeWidth="2" />
-                    <path d="M9 2a7 7 0 017 7" stroke="white" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                  {t('pid.searching')}
-                </span>
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ animation: 'spin 1s linear infinite' }}>
+                  <circle cx="9" cy="9" r="7" stroke="rgba(255,255,255,0.3)" strokeWidth="2" />
+                  <path d="M9 2a7 7 0 017 7" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+                {t('pid.searching')}
+              </span>
               : t('pid.search')}
           </BigButton>
 
@@ -211,8 +217,8 @@ function C2FaceVerification({
             onClick={() => setHasFaceImage(false)}
             className="card-hover"
             style={{ background: theme.card, border: `2px solid ${theme.border}`, borderRadius: 20, padding: '24px 18px', cursor: 'pointer', textAlign: 'center', transition: 'all 0.2s' }}
-            onMouseEnter={(e) => { ;(e.currentTarget as HTMLElement).style.borderColor = theme.primary }}
-            onMouseLeave={(e) => { ;(e.currentTarget as HTMLElement).style.borderColor = theme.border }}
+            onMouseEnter={(e) => { ; (e.currentTarget as HTMLElement).style.borderColor = theme.primary }}
+            onMouseLeave={(e) => { ; (e.currentTarget as HTMLElement).style.borderColor = theme.border }}
           >
             <div style={{ fontSize: 40, marginBottom: 12 }}>📤</div>
             <div style={{ fontFamily: 'Plus Jakarta Sans, Cairo', fontWeight: 700, fontSize: 15, color: theme.text, marginBottom: 6 }}>No Image Registered</div>
@@ -222,15 +228,15 @@ function C2FaceVerification({
             onClick={() => setHasFaceImage(true)}
             className="card-hover"
             style={{ background: theme.card, border: `2px solid ${theme.border}`, borderRadius: 20, padding: '24px 18px', cursor: 'pointer', textAlign: 'center', transition: 'all 0.2s' }}
-            onMouseEnter={(e) => { ;(e.currentTarget as HTMLElement).style.borderColor = theme.primary }}
-            onMouseLeave={(e) => { ;(e.currentTarget as HTMLElement).style.borderColor = theme.border }}
+            onMouseEnter={(e) => { ; (e.currentTarget as HTMLElement).style.borderColor = theme.primary }}
+            onMouseLeave={(e) => { ; (e.currentTarget as HTMLElement).style.borderColor = theme.border }}
           >
             <div style={{ fontSize: 40, marginBottom: 12 }}>✅</div>
             <div style={{ fontFamily: 'Plus Jakarta Sans, Cairo', fontWeight: 700, fontSize: 15, color: theme.text, marginBottom: 6 }}>Image Available</div>
             <div style={{ fontFamily: 'Inter, Cairo', fontSize: 12, color: theme.textMuted, lineHeight: 1.5 }}>Patient has a registered face in the system</div>
           </button>
         </div>
-      
+
       </ScreenContainer>
     )
   }
@@ -384,160 +390,160 @@ function VerifyFaceScreen({ onNext }: { onNext: () => void }) {
   const [progress, setProgress] = useState(0)
 
   const videoRef = useRef<HTMLVideoElement>(null)
-const streamRef = useRef<MediaStream | null>(null)
-const [cameraReady, setCameraReady] = useState(false)
-const [cameraError, setCameraError] = useState('')
-const [similarity, setSimilarity] = useState<number | null>(null)
+  const streamRef = useRef<MediaStream | null>(null)
+  const [cameraReady, setCameraReady] = useState(false)
+  const [cameraError, setCameraError] = useState('')
+  const [similarity, setSimilarity] = useState<number | null>(null)
 
   useEffect(() => {
-  let active = true
+    let active = true
 
-  const startCamera = async () => {
+    const startCamera = async () => {
+      try {
+        setCameraError('')
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: false,
+        })
+
+        if (!active) {
+          stream.getTracks().forEach((track) => track.stop())
+          return
+        }
+
+        streamRef.current = stream
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream
+        }
+
+        setCameraReady(true)
+      } catch (error) {
+        console.error('Camera error:', error)
+        setCameraError('Could not access the camera.')
+        setCameraReady(false)
+      }
+    }
+
+    startCamera()
+
+    return () => {
+      active = false
+
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop())
+        streamRef.current = null
+      }
+    }
+  }, [])
+  const verifyFace = async () => {
+    if (!videoRef.current || !cameraReady) {
+      console.log('Camera is not ready yet.')
+      return
+    }
+
     try {
-      setCameraError('')
+      setPhase('scanning')
+      setProgress(20)
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: false,
+      const video = videoRef.current
+
+      // نأخذ صورة من الفيديو الحالي
+      const canvas = document.createElement('canvas')
+      canvas.width = video.videoWidth
+      canvas.height = video.videoHeight
+
+      const context = canvas.getContext('2d')
+
+      if (!context) {
+        throw new Error('Could not create canvas context.')
+      }
+
+      context.drawImage(
+        video,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      )
+
+      setPhase('matching')
+      setProgress(60)
+
+      // نحول الصورة إلى ملف JPEG
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob(
+          (result) => {
+            if (result) {
+              resolve(result)
+            } else {
+              reject(new Error('Could not capture image.'))
+            }
+          },
+          'image/jpeg',
+          0.95
+        )
       })
 
-      if (!active) {
-        stream.getTracks().forEach((track) => track.stop())
-        return
-      }
+      const formData = new FormData()
+      formData.append('file', blob, 'live-face.jpg')
 
-      streamRef.current = stream
-
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream
-      }
-
-      setCameraReady(true)
-    } catch (error) {
-      console.error('Camera error:', error)
-      setCameraError('Could not access the camera.')
-      setCameraReady(false)
-    }
-  }
-
-  startCamera()
-
-  return () => {
-    active = false
-
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop())
-      streamRef.current = null
-    }
-  }
-}, [])
-const verifyFace = async () => {
-  if (!videoRef.current || !cameraReady) {
-    console.log('Camera is not ready yet.')
-    return
-  }
-
-  try {
-    setPhase('scanning')
-    setProgress(20)
-
-    const video = videoRef.current
-
-    // نأخذ صورة من الفيديو الحالي
-    const canvas = document.createElement('canvas')
-    canvas.width = video.videoWidth
-    canvas.height = video.videoHeight
-
-    const context = canvas.getContext('2d')
-
-    if (!context) {
-      throw new Error('Could not create canvas context.')
-    }
-
-    context.drawImage(
-      video,
-      0,
-      0,
-      canvas.width,
-      canvas.height
-    )
-
-    setPhase('matching')
-    setProgress(60)
-
-    // نحول الصورة إلى ملف JPEG
-    const blob = await new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob(
-        (result) => {
-          if (result) {
-            resolve(result)
-          } else {
-            reject(new Error('Could not capture image.'))
-          }
-        },
-        'image/jpeg',
-        0.95
+      // إرسال الصورة إلى Python
+      const response = await fetch(
+        'https://healthcare-ai-face-api.onrender.com/verify-face',
+        {
+          method: 'POST',
+          body: formData,
+        }
       )
-    })
 
-    const formData = new FormData()
-    formData.append('file', blob, 'live-face.jpg')
-
-    // إرسال الصورة إلى Python
-    const response = await fetch(
-  'https://healthcare-ai-face-api.onrender.com/verify-face',
-      {
-        method: 'POST',
-        body: formData,
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.status}`)
       }
-    )
 
-    if (!response.ok) {
-      throw new Error(`Server error: ${response.status}`)
+      const result = await response.json()
+
+      console.log('Face verification result:', result)
+
+      if (typeof result.similarity === 'number') {
+        setSimilarity(result.similarity)
+      }
+
+      setProgress(100)
+
+      if (result.verified) {
+        setPhase('done')
+      } else {
+        setPhase('scanning')
+        setProgress(0)
+
+        console.log(
+          `Face not matched. Similarity: ${result.similarity ?? 0}%. Retrying...`
+        )
+
+        setTimeout(() => {
+          verifyFace()
+        }, 1500)
+      }
+    } catch (error) {
+      console.error('Face verification error:', error)
+
+      setPhase('scanning')
+      setProgress(0)
+
+      alert('Face verification failed. Check the Python API.')
     }
-
-    const result = await response.json()
-
-console.log('Face verification result:', result)
-
-if (typeof result.similarity === 'number') {
-  setSimilarity(result.similarity)
-}
-
-setProgress(100)
-
-    if (result.verified) {
-  setPhase('done')
-} else {
-  setPhase('scanning')
-  setProgress(0)
-
-  console.log(
-    `Face not matched. Similarity: ${result.similarity ?? 0}%. Retrying...`
-  )
-
-  setTimeout(() => {
-    verifyFace()
-  }, 1500)
-}
-  } catch (error) {
-    console.error('Face verification error:', error)
-
-    setPhase('scanning')
-    setProgress(0)
-
-    alert('Face verification failed. Check the Python API.')
   }
-}
-useEffect(() => {
-  if (!cameraReady) return
+  useEffect(() => {
+    if (!cameraReady) return
 
-  const timer = setTimeout(() => {
-    verifyFace()
-  }, 2500)
+    const timer = setTimeout(() => {
+      verifyFace()
+    }, 2500)
 
-  return () => clearTimeout(timer)
-}, [cameraReady])
+    return () => clearTimeout(timer)
+  }, [cameraReady])
   const phaseLabel = phase === 'scanning' ? t('face.verify.scanning') : phase === 'matching' ? t('face.verify.matching') : t('face.verify.done')
 
   return (
@@ -548,39 +554,39 @@ useEffect(() => {
         {/* Camera simulation */}
         <div style={{ background: '#050510', borderRadius: 18, overflow: 'hidden', position: 'relative', height: 260, marginBottom: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <video
-  ref={videoRef}
-  autoPlay
-  playsInline
-  muted
-  onLoadedMetadata={() => setCameraReady(true)}
-  style={{
-    position: 'absolute',
-    inset: 0,
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-    transform: 'scaleX(-1)',
-  }}
-/>
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            onLoadedMetadata={() => setCameraReady(true)}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              transform: 'scaleX(-1)',
+            }}
+          />
 
-{cameraError && (
-  <div
-    style={{
-      position: 'absolute',
-      inset: 0,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      color: 'white',
-      fontFamily: 'Inter',
-      fontSize: 13,
-      zIndex: 20,
-      background: '#050510',
-    }}
-  >
-    {cameraError}
-  </div>
-)}
+          {cameraError && (
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontFamily: 'Inter',
+                fontSize: 13,
+                zIndex: 20,
+                background: '#050510',
+              }}
+            >
+              {cameraError}
+            </div>
+          )}
           <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(0,119,182,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,119,182,0.04) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
           <div className="animate-scan" style={{ position: 'absolute', left: 0, right: 0, height: 2, background: `rgba(0,119,182,0.6)`, top: 0, zIndex: 5 }} />
 
@@ -626,14 +632,14 @@ useEffect(() => {
             </span>
           </div>
         </div>
-      
+
 
         {/* Progress */}
         <div style={{ marginBottom: 16 }}>
           <ProgressBar progress={progress} color={theme.primary} label={t('face.verify.title')} done={phase === 'done'} doneLabel={t('face.verified')} />
         </div>
 
-                {phase === 'done' && (
+        {phase === 'done' && (
           <div
             className="animate-float-in"
             style={{
@@ -712,17 +718,17 @@ useEffect(() => {
             </div>
           </div>
         )}
-</Card>
+      </Card>
 
 
 
-<BigButton
-  onClick={onNext}
-  variant="primary"
-  disabled={phase !== 'done'}
->
-  {t('face.continue')}
-</BigButton>
+      <BigButton
+        onClick={onNext}
+        variant="primary"
+        disabled={phase !== 'done'}
+      >
+        {t('face.continue')}
+      </BigButton>
     </ScreenContainer>
   )
 }
@@ -800,6 +806,7 @@ function C3Procedure({ onNext, procedure, setProcedure }: { onNext: () => void; 
           </div>
         )}
       </Card>
+
       <BigButton
         onClick={() => { if (procedure === 'other' && other) setProcedure(other); onNext() }}
         variant="primary"
@@ -1164,10 +1171,9 @@ function C4Permission({
                   ? '#F0FDF4'
                   : theme.card,
               border:
-                `2.5px solid ${
-                  choice === 'yes'
-                    ? '#16a34a'
-                    : theme.border
+                `2.5px solid ${choice === 'yes'
+                  ? '#16a34a'
+                  : theme.border
                 }`,
               borderRadius: 16,
               padding: '20px 14px',
@@ -1224,10 +1230,9 @@ function C4Permission({
                   ? theme.dangerLight
                   : theme.card,
               border:
-                `2.5px solid ${
-                  choice === 'no'
-                    ? theme.danger
-                    : theme.border
+                `2.5px solid ${choice === 'no'
+                  ? theme.danger
+                  : theme.border
                 }`,
               borderRadius: 16,
               padding: '20px 14px',
@@ -1284,10 +1289,9 @@ function C4Permission({
                   : theme.dangerLight,
               borderRadius: 14,
               border:
-                `1px solid ${
-                  counting === 'yes'
-                    ? '#86EFAC'
-                    : '#FECACA'
+                `1px solid ${counting === 'yes'
+                  ? '#86EFAC'
+                  : '#FECACA'
                 }`,
             }}
           >
@@ -1392,11 +1396,11 @@ I voluntarily consent to the performance of the ${procedure} procedure.`
 
         {!scrolled
           ? <div style={{ marginTop: 10, padding: '8px', background: '#FFFBEB', borderRadius: 8, border: '1px solid #FDE68A', textAlign: 'center' }}>
-              <span style={{ fontFamily: 'Inter, Cairo', fontSize: 11, color: '#92400E' }}>{t('consent.scroll')}</span>
-            </div>
+            <span style={{ fontFamily: 'Inter, Cairo', fontSize: 11, color: '#92400E' }}>{t('consent.scroll')}</span>
+          </div>
           : <div className="animate-float-in" style={{ marginTop: 10, padding: '9px 14px', background: '#F0FDF4', borderRadius: 10, border: '1px solid #86EFAC', textAlign: 'center' }}>
-              <span style={{ fontFamily: 'Inter, Cairo', fontSize: 12, color: '#15803d', fontWeight: 500 }}>{t('consent.read.done')}</span>
-            </div>
+            <span style={{ fontFamily: 'Inter, Cairo', fontSize: 12, color: '#15803d', fontWeight: 500 }}>{t('consent.read.done')}</span>
+          </div>
         }
       </Card>
 
@@ -1408,624 +1412,624 @@ I voluntarily consent to the performance of the ${procedure} procedure.`
 // ─── C6: Eye Signature ─────────────────────────────────────────────────────────
 function C6Signature({ onNext }: { onNext: () => void }) {
   const { t, theme } = useApp()
-const [progress, setProgress] = useState(0)
-const [done, setDone] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const [done, setDone] = useState(false)
 
-const [verificationCode, setVerificationCode] = useState<number[]>([])
-const [confirmedPoints, setConfirmedPoints] = useState<number[]>([])
-const [nextExpected, setNextExpected] = useState<number | null>(null)
-const [eyeConnected, setEyeConnected] = useState(false)
-const [currentPoint, setCurrentPoint] = useState<number | null>(null)
-const [calibrationPoint, setCalibrationPoint] = useState(1)
-const [calibrationSamples, setCalibrationSamples] = useState<
-  { yaw: number; pitch: number }[]
->([])
-const [calibrationStarted, setCalibrationStarted] = useState(true)
-const [calibrationResults, setCalibrationResults] = useState<
-  Record<number, { yaw: number; pitch: number }>
->({})
-const [detectedPoint, setDetectedPoint] = useState<number | null>(null)
-const candidatePointRef = useRef<number | null>(null)
-const candidateCountRef = useRef(0)
-const signatureTargetPointRef = useRef<number | null>(null)
+  const [verificationCode, setVerificationCode] = useState<number[]>([])
+  const [confirmedPoints, setConfirmedPoints] = useState<number[]>([])
+  const [nextExpected, setNextExpected] = useState<number | null>(null)
+  const [eyeConnected, setEyeConnected] = useState(false)
+  const [currentPoint, setCurrentPoint] = useState<number | null>(null)
+  const [calibrationPoint, setCalibrationPoint] = useState(1)
+  const [calibrationSamples, setCalibrationSamples] = useState<
+    { yaw: number; pitch: number }[]
+  >([])
+  const [calibrationStarted, setCalibrationStarted] = useState(true)
+  const [calibrationResults, setCalibrationResults] = useState<
+    Record<number, { yaw: number; pitch: number }>
+  >({})
+  const [detectedPoint, setDetectedPoint] = useState<number | null>(null)
+  const candidatePointRef = useRef<number | null>(null)
+  const candidateCountRef = useRef(0)
+  const signatureTargetPointRef = useRef<number | null>(null)
 
-// Double blink detection
-const signatureLastBlinkStateRef = useRef(false)
-const signatureFirstBlinkTimeRef = useRef<number | null>(null)
-const signatureBlinkCountRef = useRef(0)
-const signatureBlinkLockedRef = useRef(false)
-const verificationCodeRef = useRef<number[]>([])
-const confirmedPointsRef = useRef<number[]>([])
-const nextExpectedIndexRef = useRef(0)
-const lastCalibrationSampleTimeRef = useRef(0)
-const calibrationPointStartTimeRef = useRef(Date.now())
+  // Double blink detection
+  const signatureLastBlinkStateRef = useRef(false)
+  const signatureFirstBlinkTimeRef = useRef<number | null>(null)
+  const signatureBlinkCountRef = useRef(0)
+  const signatureBlinkLockedRef = useRef(false)
+  const verificationCodeRef = useRef<number[]>([])
+  const confirmedPointsRef = useRef<number[]>([])
+  const nextExpectedIndexRef = useRef(0)
+  const lastCalibrationSampleTimeRef = useRef(0)
+  const calibrationPointStartTimeRef = useRef(Date.now())
 
-const videoRef = useRef<HTMLVideoElement>(null)
-const streamRef = useRef<MediaStream | null>(null)
-const [cameraReady, setCameraReady] = useState(false)
-const [cameraError, setCameraError] = useState('')
-const [eyeDebug, setEyeDebug] = useState('waiting')
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const streamRef = useRef<MediaStream | null>(null)
+  const [cameraReady, setCameraReady] = useState(false)
+  const [cameraError, setCameraError] = useState('')
+  const [eyeDebug, setEyeDebug] = useState('waiting')
 
   useEffect(() => {
-  let active = true
+    let active = true
 
-  const startCamera = async () => {
-    try {
-      setCameraError('')
-
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: 'user',
-        },
-        audio: false,
-      })
-
-      if (!active) {
-        stream.getTracks().forEach((track) => track.stop())
-        return
-      }
-
-      streamRef.current = stream
-
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream
-      }
-
-      setCameraReady(true)
-
-    } catch (error) {
-      console.error('Eye camera error:', error)
-      setCameraError('Could not access the camera.')
-      setCameraReady(false)
-    }
-  }
-
-  startCamera()
-
-  return () => {
-    active = false
-
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop())
-      streamRef.current = null
-    }
-  }
-}, [])
-useEffect(() => {
- if (!cameraReady) return
-
- const sendFrame = async () => {
-  const video = videoRef.current
-
-  setEyeDebug(
-    `ready=${cameraReady} | video=${!!video} | size=${video?.videoWidth ?? 0}x${video?.videoHeight ?? 0}`
-  )
-
-  if (!video || video.videoWidth === 0 || video.videoHeight === 0) {
-    return
-  }
-
-    try {
-      const canvas = document.createElement('canvas')
-
-      canvas.width = video.videoWidth
-      canvas.height = video.videoHeight
-
-      const context = canvas.getContext('2d')
-
-      if (!context) return
-
-      context.drawImage(
-        video,
-        0,
-        0,
-        canvas.width,
-        canvas.height
-      )
-
-      const blob = await new Promise<Blob | null>((resolve) => {
-        canvas.toBlob(
-          resolve,
-          'image/jpeg',
-          0.8
-        )
-      })
-
-      if (!blob) return
-setEyeDebug(`BLOB OK | size=${blob.size}`)
-      const formData = new FormData()
-      formData.append('file', blob, 'eye-frame.jpg')
-
-      const response = await fetch(
-  'https://healthcare-ai-eye-api.onrender.com/process-frame',
-  {
-    method: 'POST',
-          body: formData,
-        }
-      )
-setEyeDebug(`FETCH DONE | status=${response.status}`)
-      if (!response.ok) return
-
-      const data = await response.json()
-      setEyeDebug(
-  `face=${data.face_detected} | spheres=${data.eye_spheres_calibrated} | samples=${calibrationSamples.length} | blink=${data.blink}`
-)
-
-      console.log('Web Eye:', data)
-      console.log('CAL DEBUG:', {
-      calibrationStarted,
-      face: data.face_detected,
-      spheres: data.eye_spheres_calibrated,
-      blink: data.blink,
-      yaw: data.raw_yaw,
-      yawType: typeof data.raw_yaw,
-      pitch: data.raw_pitch,
-      pitchType: typeof data.raw_pitch,
-    })
-      if (
-  calibrationStarted &&
-  data.face_detected === true &&
-  data.eye_spheres_calibrated === true &&
-  // data.blink === false &&
-  typeof data.raw_yaw === 'number' &&
-  typeof data.raw_pitch === 'number'
-) {
-//   if (
-//   Date.now() - calibrationPointStartTimeRef.current < 1500
-// ) {
-//   return
-// }
-  const now = Date.now()
-
-if (now - lastCalibrationSampleTimeRef.current < 150) {
-  return
-}
-
-lastCalibrationSampleTimeRef.current = now
-  setCalibrationSamples((previousSamples) => {
-    const newSamples = [
-      ...previousSamples,
-      {
-        yaw: data.raw_yaw,
-        pitch: data.raw_pitch,
-      },
-    ]
-
-    return newSamples
-  })
-}if (
-  !calibrationStarted &&
-  data.face_detected === true &&
-  data.eye_spheres_calibrated === true &&
-  typeof data.raw_yaw === 'number' &&
-  typeof data.raw_pitch === 'number' &&
-  Object.keys(calibrationResults).length === 4
-) {
-  const distances = Object.entries(calibrationResults).map(
-    ([pointNumber, position]) => {
-      const yawDifference =
-        data.raw_yaw - position.yaw
-
-      const pitchDifference =
-        data.raw_pitch - position.pitch
-
-      const distance = Math.sqrt(
-        yawDifference * yawDifference +
-        pitchDifference * pitchDifference
-      )
-
-      return {
-        point: Number(pointNumber),
-        distance,
-      }
-    }
-  )
-
-  distances.sort((a, b) => a.distance - b.distance)
-
-  const best = distances[0]
-  const second = distances[1]
-
-  let closestPoint: number | null = null
-
-  if (best && second && second.distance > 0) {
-    const confidenceRatio =
-      best.distance / second.distance
-
-    if (confidenceRatio <= 0.75) {
-      closestPoint = best.point
-    }
-  }
-
-  if (closestPoint !== null) {
-    if (candidatePointRef.current === closestPoint) {
-      candidateCountRef.current += 1
-    } else {
-      candidatePointRef.current = closestPoint
-      candidateCountRef.current = 1
-    }
-
-    // نعتمدها فقط بعد 5 قراءات متتالية
-    if (candidateCountRef.current >= 5) {
-      setDetectedPoint(closestPoint)
-
-      console.log(
-        'STABLE POINT:',
-        closestPoint
-      )
-    }
-  } else {
-    // إذا النظرة ليست واضحة على أي دائرة
-    candidatePointRef.current = null
-    candidateCountRef.current = 0
-    setDetectedPoint(null)
-  }
-}
-// ===== C6: confirm selected gaze point by DOUBLE BLINK =====
-
-if (
-  !calibrationStarted &&
-  Object.keys(calibrationResults).length === 4
-) {
-  const isEyeClosed = data.blink === true
-  console.log(
-  'C6 BLINK CHECK:',
-  data.blink,
-  'TARGET:',
-  signatureTargetPointRef.current
-)
-  const wasEyeClosed = signatureLastBlinkStateRef.current
-  const now = Date.now()
-
-  // نحفظ آخر دائرة ثابتة فقط والعين مفتوحة
-  if (
-  !isEyeClosed &&
-  candidateCountRef.current >= 5 &&
-  candidatePointRef.current !== null
-) {
-  signatureTargetPointRef.current =
-    candidatePointRef.current
-}
-
-  // Rising edge:
-  // نحسب الرمشة مرة واحدة فقط عند الانتقال من مفتوح -> مغلق
-  const newBlinkStarted =
-    isEyeClosed && !wasEyeClosed
-
-  if (
-    newBlinkStarted &&
-    !signatureBlinkLockedRef.current &&
-    signatureTargetPointRef.current !== null
-  ) {
-    const firstBlinkTime =
-      signatureFirstBlinkTimeRef.current
-
-    // أول رمشة
-    if (
-      signatureBlinkCountRef.current === 0 ||
-      firstBlinkTime === null ||
-      now - firstBlinkTime > 750
-    ) {
-      signatureBlinkCountRef.current = 1
-      signatureFirstBlinkTimeRef.current = now
-
-      console.log(
-        'C6 FIRST BLINK — TARGET:',
-        signatureTargetPointRef.current
-      )
-    }
-
-    // الرمشة الثانية جاءت خلال 1.2 ثانية
-    else {
-      signatureBlinkCountRef.current = 2
-
-      const confirmedPoint =
-        signatureTargetPointRef.current
-
-      console.log(
-        'C6 DOUBLE BLINK CONFIRMED:',
-        confirmedPoint
-      )
-      const expectedIndex =
-  nextExpectedIndexRef.current
-
-const expectedPoint =
-  verificationCodeRef.current[expectedIndex]
-
-console.log(
-  'C6 CHECK:',
-  {
-    lookedAt: confirmedPoint,
-    expected: expectedPoint,
-    index: expectedIndex,
-  }
-)
-
-if (confirmedPoint === expectedPoint) {
-  // النقطة صحيحة
-  const newConfirmedPoints = [
-    ...confirmedPointsRef.current,
-    confirmedPoint,
-  ]
-
-  confirmedPointsRef.current =
-    newConfirmedPoints
-
-  setConfirmedPoints(newConfirmedPoints)
-
-  const newIndex = expectedIndex + 1
-
-  nextExpectedIndexRef.current = newIndex
-
-  const newProgress =
-    (newConfirmedPoints.length / 4) * 100
-
-  setProgress(newProgress)
-
-  // هل انتهت الأربع نقاط؟
-  if (
-    newIndex >=
-    verificationCodeRef.current.length
-  ) {
-    setNextExpected(null)
-    setDone(true)
-    setProgress(100)
-
-    console.log(
-      'C6 SIGNATURE VERIFIED:',
-      newConfirmedPoints
-    )
-  } else {
-    const nextPoint =
-      verificationCodeRef.current[newIndex]
-
-    setNextExpected(nextPoint)
-
-    console.log(
-      'C6 NEXT EXPECTED:',
-      nextPoint
-    )
-  }
-} else {
-  // رمشتين صحيحتين لكن على دائرة غير المطلوبة
-  console.log(
-    'C6 WRONG POINT:',
-    {
-      lookedAt: confirmedPoint,
-      expected: expectedPoint,
-    }
-  )
-}
-      // نقفل مؤقتًا حتى لا تتكرر عملية التأكيد
-      signatureBlinkLockedRef.current = true
-      signatureBlinkCountRef.current = 0
-      signatureFirstBlinkTimeRef.current = null
-
-      // صوت واحد فقط عند نجاح الرمشتين
+    const startCamera = async () => {
       try {
-        const audioContext = new AudioContext()
-        const oscillator =
-          audioContext.createOscillator()
-        const gain =
-          audioContext.createGain()
+        setCameraError('')
 
-        oscillator.connect(gain)
-        gain.connect(audioContext.destination)
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: 'user',
+          },
+          audio: false,
+        })
 
-        oscillator.frequency.value = 880
-        gain.gain.value = 0.15
+        if (!active) {
+          stream.getTracks().forEach((track) => track.stop())
+          return
+        }
 
-        oscillator.start()
+        streamRef.current = stream
 
-        setTimeout(() => {
-          oscillator.stop()
-          audioContext.close()
-        }, 180)
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream
+        }
+
+        setCameraReady(true)
+
       } catch (error) {
-        console.log(
-          'C6 confirmation sound error:',
-          error
-        )
+        console.error('Eye camera error:', error)
+        setCameraError('Could not access the camera.')
+        setCameraReady(false)
       }
-
-      // بعد فترة قصيرة نسمح باختيار الدائرة التالية
-      setTimeout(() => {
-        signatureBlinkLockedRef.current = false
-        signatureTargetPointRef.current = null
-      }, 700)
     }
-  }
 
-  // إذا مر وقت طويل بعد أول رمشة بدون الثانية
-  // نلغي المحاولة ونبدأ من جديد
-  if (
-    signatureBlinkCountRef.current === 1 &&
-    signatureFirstBlinkTimeRef.current !== null &&
-    now - signatureFirstBlinkTimeRef.current > 750
-  ) {
-    signatureBlinkCountRef.current = 0
-    signatureFirstBlinkTimeRef.current = null
+    startCamera()
 
-    console.log('C6 DOUBLE BLINK TIMEOUT')
-  }
+    return () => {
+      active = false
 
-  // مهم جدًا: نحفظ حالة العين الحالية لنعرف بداية الرمشة التالية
-  signatureLastBlinkStateRef.current = isEyeClosed
-}
-    } catch (error) {
-      console.error('Web Eye frame error:', error)
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop())
+        streamRef.current = null
+      }
     }
-  }
-
-  const interval = setInterval(sendFrame, 100)
-
-  return () => clearInterval(interval)
-}, [cameraReady, calibrationStarted, calibrationResults])
-useEffect(() => {
-  if (!calibrationStarted) return
-
-  console.log(
-    'CALIBRATION SAMPLES:',
-    calibrationPoint,
-    calibrationSamples.length
-  )
-
-  // انتظر حتى نجمع 40 عينة للنقطة الحالية
-  if (calibrationSamples.length < 40) return
-
-  const yawValues = calibrationSamples.map(
-    (sample) => sample.yaw
-  )
-
-  const pitchValues = calibrationSamples.map(
-    (sample) => sample.pitch
-  )
-
-  const sortedYaw = [...yawValues].sort(
-    (a, b) => a - b
-  )
-
-  const sortedPitch = [...pitchValues].sort(
-    (a, b) => a - b
-  )
-
-  const middle = Math.floor(
-    sortedYaw.length / 2
-  )
-
-  const medianYaw = sortedYaw[middle]
-  const medianPitch = sortedPitch[middle]
-
-  console.log(
-    `CALIBRATION POINT ${calibrationPoint} COMPLETE:`,
-    {
-      yaw: medianYaw,
-      pitch: medianPitch,
-      samples: calibrationSamples.length,
-    }
-  )
-
-  setCalibrationResults((previous) => ({
-    ...previous,
-    [calibrationPoint]: {
-      yaw: medianYaw,
-      pitch: medianPitch,
-    },
-  }))
-
-  // نفرغ العينات استعدادًا للنقطة التالية
-  setCalibrationSamples([])
-
-  if (calibrationPoint < 4) {
-    calibrationPointStartTimeRef.current = Date.now()
-    lastCalibrationSampleTimeRef.current = 0
-
-    setCalibrationPoint(
-      (previous) => previous + 1
-    )
-  } else {
-    setCalibrationStarted(false)
-
-    console.log('CALIBRATION COMPLETE')
-  }
-}, [
-  calibrationSamples,
-  calibrationPoint,
-  calibrationStarted,
-])
-// Generate a random verification code after calibration is complete
-useEffect(() => {
-  if (calibrationStarted) return
-  if (Object.keys(calibrationResults).length !== 4) return
-  if (verificationCode.length > 0) return
-
-  const points = [1, 2, 3, 4]
-
-  // Shuffle the four points
-  for (let i = points.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-
-    const temp = points[i]
-    points[i] = points[j]
-    points[j] = temp
-  }
-
-  verificationCodeRef.current = points
-  confirmedPointsRef.current = []
-  nextExpectedIndexRef.current = 0
-
-  setVerificationCode(points)
-  setConfirmedPoints([])
-  setNextExpected(points[0])
-  setProgress(0)
-  setDone(false)
-
-  console.log(
-    'C6 VERIFICATION CODE:',
-    points
-  )
-}, [
-  calibrationStarted,
-  calibrationResults,
-  verificationCode.length,
-])
-  
+  }, [])
   useEffect(() => {
-  const fetchEyeState = async () => {
-    try {
-      const response = await fetch(
-  'https://healthcare-ai-eye-api.onrender.com/gaze-state'
-)
+    if (!cameraReady) return
 
-      if (!response.ok) {
-        throw new Error(`Eye API error: ${response.status}`)
-      }
+    const sendFrame = async () => {
+      const video = videoRef.current
 
-      const data = await response.json()
+      setEyeDebug(
+        `ready=${cameraReady} | video=${!!video} | size=${video?.videoWidth ?? 0}x${video?.videoHeight ?? 0}`
+      )
 
-      if (data.success === false) {
-        setEyeConnected(false)
+      if (!video || video.videoWidth === 0 || video.videoHeight === 0) {
         return
       }
 
-      setEyeConnected(true)
-      // setCalibrationStarted(data.phase === 'calibration')
-      // setCalibrationPoint(data.current_point ?? 1)
-      // setVerificationCode(data.verification_code || [])
-      // setConfirmedPoints(data.confirmed_points || [])
-      // setNextExpected(data.next_expected ?? null)
-      setCurrentPoint(data.current_point ?? null)
-      // setDone(data.verified === true)
+      try {
+        const canvas = document.createElement('canvas')
 
-      // const totalPoints = data.verification_code?.length || 4
-      // const completedPoints = data.confirmed_points?.length || 0
+        canvas.width = video.videoWidth
+        canvas.height = video.videoHeight
 
-      // setProgress((completedPoints / totalPoints) * 100)
+        const context = canvas.getContext('2d')
 
-    } catch (error) {
-      console.error('Eye API connection error:', error)
-      setEyeConnected(false)
+        if (!context) return
+
+        context.drawImage(
+          video,
+          0,
+          0,
+          canvas.width,
+          canvas.height
+        )
+
+        const blob = await new Promise<Blob | null>((resolve) => {
+          canvas.toBlob(
+            resolve,
+            'image/jpeg',
+            0.8
+          )
+        })
+
+        if (!blob) return
+        setEyeDebug(`BLOB OK | size=${blob.size}`)
+        const formData = new FormData()
+        formData.append('file', blob, 'eye-frame.jpg')
+
+        const response = await fetch(
+          'https://healthcare-ai-eye-api.onrender.com/process-frame',
+          {
+            method: 'POST',
+            body: formData,
+          }
+        )
+        setEyeDebug(`FETCH DONE | status=${response.status}`)
+        if (!response.ok) return
+
+        const data = await response.json()
+        setEyeDebug(
+          `face=${data.face_detected} | spheres=${data.eye_spheres_calibrated} | samples=${calibrationSamples.length} | blink=${data.blink}`
+        )
+
+        console.log('Web Eye:', data)
+        console.log('CAL DEBUG:', {
+          calibrationStarted,
+          face: data.face_detected,
+          spheres: data.eye_spheres_calibrated,
+          blink: data.blink,
+          yaw: data.raw_yaw,
+          yawType: typeof data.raw_yaw,
+          pitch: data.raw_pitch,
+          pitchType: typeof data.raw_pitch,
+        })
+        if (
+          calibrationStarted &&
+          data.face_detected === true &&
+          data.eye_spheres_calibrated === true &&
+          // data.blink === false &&
+          typeof data.raw_yaw === 'number' &&
+          typeof data.raw_pitch === 'number'
+        ) {
+          //   if (
+          //   Date.now() - calibrationPointStartTimeRef.current < 1500
+          // ) {
+          //   return
+          // }
+          const now = Date.now()
+
+          if (now - lastCalibrationSampleTimeRef.current < 150) {
+            return
+          }
+
+          lastCalibrationSampleTimeRef.current = now
+          setCalibrationSamples((previousSamples) => {
+            const newSamples = [
+              ...previousSamples,
+              {
+                yaw: data.raw_yaw,
+                pitch: data.raw_pitch,
+              },
+            ]
+
+            return newSamples
+          })
+        } if (
+          !calibrationStarted &&
+          data.face_detected === true &&
+          data.eye_spheres_calibrated === true &&
+          typeof data.raw_yaw === 'number' &&
+          typeof data.raw_pitch === 'number' &&
+          Object.keys(calibrationResults).length === 4
+        ) {
+          const distances = Object.entries(calibrationResults).map(
+            ([pointNumber, position]) => {
+              const yawDifference =
+                data.raw_yaw - position.yaw
+
+              const pitchDifference =
+                data.raw_pitch - position.pitch
+
+              const distance = Math.sqrt(
+                yawDifference * yawDifference +
+                pitchDifference * pitchDifference
+              )
+
+              return {
+                point: Number(pointNumber),
+                distance,
+              }
+            }
+          )
+
+          distances.sort((a, b) => a.distance - b.distance)
+
+          const best = distances[0]
+          const second = distances[1]
+
+          let closestPoint: number | null = null
+
+          if (best && second && second.distance > 0) {
+            const confidenceRatio =
+              best.distance / second.distance
+
+            if (confidenceRatio <= 0.75) {
+              closestPoint = best.point
+            }
+          }
+
+          if (closestPoint !== null) {
+            if (candidatePointRef.current === closestPoint) {
+              candidateCountRef.current += 1
+            } else {
+              candidatePointRef.current = closestPoint
+              candidateCountRef.current = 1
+            }
+
+            // نعتمدها فقط بعد 5 قراءات متتالية
+            if (candidateCountRef.current >= 5) {
+              setDetectedPoint(closestPoint)
+
+              console.log(
+                'STABLE POINT:',
+                closestPoint
+              )
+            }
+          } else {
+            // إذا النظرة ليست واضحة على أي دائرة
+            candidatePointRef.current = null
+            candidateCountRef.current = 0
+            setDetectedPoint(null)
+          }
+        }
+        // ===== C6: confirm selected gaze point by DOUBLE BLINK =====
+
+        if (
+          !calibrationStarted &&
+          Object.keys(calibrationResults).length === 4
+        ) {
+          const isEyeClosed = data.blink === true
+          console.log(
+            'C6 BLINK CHECK:',
+            data.blink,
+            'TARGET:',
+            signatureTargetPointRef.current
+          )
+          const wasEyeClosed = signatureLastBlinkStateRef.current
+          const now = Date.now()
+
+          // نحفظ آخر دائرة ثابتة فقط والعين مفتوحة
+          if (
+            !isEyeClosed &&
+            candidateCountRef.current >= 5 &&
+            candidatePointRef.current !== null
+          ) {
+            signatureTargetPointRef.current =
+              candidatePointRef.current
+          }
+
+          // Rising edge:
+          // نحسب الرمشة مرة واحدة فقط عند الانتقال من مفتوح -> مغلق
+          const newBlinkStarted =
+            isEyeClosed && !wasEyeClosed
+
+          if (
+            newBlinkStarted &&
+            !signatureBlinkLockedRef.current &&
+            signatureTargetPointRef.current !== null
+          ) {
+            const firstBlinkTime =
+              signatureFirstBlinkTimeRef.current
+
+            // أول رمشة
+            if (
+              signatureBlinkCountRef.current === 0 ||
+              firstBlinkTime === null ||
+              now - firstBlinkTime > 750
+            ) {
+              signatureBlinkCountRef.current = 1
+              signatureFirstBlinkTimeRef.current = now
+
+              console.log(
+                'C6 FIRST BLINK — TARGET:',
+                signatureTargetPointRef.current
+              )
+            }
+
+            // الرمشة الثانية جاءت خلال 1.2 ثانية
+            else {
+              signatureBlinkCountRef.current = 2
+
+              const confirmedPoint =
+                signatureTargetPointRef.current
+
+              console.log(
+                'C6 DOUBLE BLINK CONFIRMED:',
+                confirmedPoint
+              )
+              const expectedIndex =
+                nextExpectedIndexRef.current
+
+              const expectedPoint =
+                verificationCodeRef.current[expectedIndex]
+
+              console.log(
+                'C6 CHECK:',
+                {
+                  lookedAt: confirmedPoint,
+                  expected: expectedPoint,
+                  index: expectedIndex,
+                }
+              )
+
+              if (confirmedPoint === expectedPoint) {
+                // النقطة صحيحة
+                const newConfirmedPoints = [
+                  ...confirmedPointsRef.current,
+                  confirmedPoint,
+                ]
+
+                confirmedPointsRef.current =
+                  newConfirmedPoints
+
+                setConfirmedPoints(newConfirmedPoints)
+
+                const newIndex = expectedIndex + 1
+
+                nextExpectedIndexRef.current = newIndex
+
+                const newProgress =
+                  (newConfirmedPoints.length / 4) * 100
+
+                setProgress(newProgress)
+
+                // هل انتهت الأربع نقاط؟
+                if (
+                  newIndex >=
+                  verificationCodeRef.current.length
+                ) {
+                  setNextExpected(null)
+                  setDone(true)
+                  setProgress(100)
+
+                  console.log(
+                    'C6 SIGNATURE VERIFIED:',
+                    newConfirmedPoints
+                  )
+                } else {
+                  const nextPoint =
+                    verificationCodeRef.current[newIndex]
+
+                  setNextExpected(nextPoint)
+
+                  console.log(
+                    'C6 NEXT EXPECTED:',
+                    nextPoint
+                  )
+                }
+              } else {
+                // رمشتين صحيحتين لكن على دائرة غير المطلوبة
+                console.log(
+                  'C6 WRONG POINT:',
+                  {
+                    lookedAt: confirmedPoint,
+                    expected: expectedPoint,
+                  }
+                )
+              }
+              // نقفل مؤقتًا حتى لا تتكرر عملية التأكيد
+              signatureBlinkLockedRef.current = true
+              signatureBlinkCountRef.current = 0
+              signatureFirstBlinkTimeRef.current = null
+
+              // صوت واحد فقط عند نجاح الرمشتين
+              try {
+                const audioContext = new AudioContext()
+                const oscillator =
+                  audioContext.createOscillator()
+                const gain =
+                  audioContext.createGain()
+
+                oscillator.connect(gain)
+                gain.connect(audioContext.destination)
+
+                oscillator.frequency.value = 880
+                gain.gain.value = 0.15
+
+                oscillator.start()
+
+                setTimeout(() => {
+                  oscillator.stop()
+                  audioContext.close()
+                }, 180)
+              } catch (error) {
+                console.log(
+                  'C6 confirmation sound error:',
+                  error
+                )
+              }
+
+              // بعد فترة قصيرة نسمح باختيار الدائرة التالية
+              setTimeout(() => {
+                signatureBlinkLockedRef.current = false
+                signatureTargetPointRef.current = null
+              }, 700)
+            }
+          }
+
+          // إذا مر وقت طويل بعد أول رمشة بدون الثانية
+          // نلغي المحاولة ونبدأ من جديد
+          if (
+            signatureBlinkCountRef.current === 1 &&
+            signatureFirstBlinkTimeRef.current !== null &&
+            now - signatureFirstBlinkTimeRef.current > 750
+          ) {
+            signatureBlinkCountRef.current = 0
+            signatureFirstBlinkTimeRef.current = null
+
+            console.log('C6 DOUBLE BLINK TIMEOUT')
+          }
+
+          // مهم جدًا: نحفظ حالة العين الحالية لنعرف بداية الرمشة التالية
+          signatureLastBlinkStateRef.current = isEyeClosed
+        }
+      } catch (error) {
+        console.error('Web Eye frame error:', error)
+      }
     }
+
+    const interval = setInterval(sendFrame, 100)
+
+    return () => clearInterval(interval)
+  }, [cameraReady, calibrationStarted, calibrationResults])
+  useEffect(() => {
+    if (!calibrationStarted) return
+
+    console.log(
+      'CALIBRATION SAMPLES:',
+      calibrationPoint,
+      calibrationSamples.length
+    )
+
+    // انتظر حتى نجمع 40 عينة للنقطة الحالية
+    if (calibrationSamples.length < 40) return
+
+    const yawValues = calibrationSamples.map(
+      (sample) => sample.yaw
+    )
+
+    const pitchValues = calibrationSamples.map(
+      (sample) => sample.pitch
+    )
+
+    const sortedYaw = [...yawValues].sort(
+      (a, b) => a - b
+    )
+
+    const sortedPitch = [...pitchValues].sort(
+      (a, b) => a - b
+    )
+
+    const middle = Math.floor(
+      sortedYaw.length / 2
+    )
+
+    const medianYaw = sortedYaw[middle]
+    const medianPitch = sortedPitch[middle]
+
+    console.log(
+      `CALIBRATION POINT ${calibrationPoint} COMPLETE:`,
+      {
+        yaw: medianYaw,
+        pitch: medianPitch,
+        samples: calibrationSamples.length,
+      }
+    )
+
+    setCalibrationResults((previous) => ({
+      ...previous,
+      [calibrationPoint]: {
+        yaw: medianYaw,
+        pitch: medianPitch,
+      },
+    }))
+
+    // نفرغ العينات استعدادًا للنقطة التالية
+    setCalibrationSamples([])
+
+    if (calibrationPoint < 4) {
+      calibrationPointStartTimeRef.current = Date.now()
+      lastCalibrationSampleTimeRef.current = 0
+
+      setCalibrationPoint(
+        (previous) => previous + 1
+      )
+    } else {
+      setCalibrationStarted(false)
+
+      console.log('CALIBRATION COMPLETE')
+    }
+  }, [
+    calibrationSamples,
+    calibrationPoint,
+    calibrationStarted,
+  ])
+  // Generate a random verification code after calibration is complete
+  useEffect(() => {
+    if (calibrationStarted) return
+    if (Object.keys(calibrationResults).length !== 4) return
+    if (verificationCode.length > 0) return
+
+    const points = [1, 2, 3, 4]
+
+    // Shuffle the four points
+    for (let i = points.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+
+      const temp = points[i]
+      points[i] = points[j]
+      points[j] = temp
+    }
+
+    verificationCodeRef.current = points
+    confirmedPointsRef.current = []
+    nextExpectedIndexRef.current = 0
+
+    setVerificationCode(points)
+    setConfirmedPoints([])
+    setNextExpected(points[0])
+    setProgress(0)
+    setDone(false)
+
+    console.log(
+      'C6 VERIFICATION CODE:',
+      points
+    )
+  }, [
+    calibrationStarted,
+    calibrationResults,
+    verificationCode.length,
+  ])
+
+  useEffect(() => {
+    const fetchEyeState = async () => {
+      try {
+        const response = await fetch(
+          'https://healthcare-ai-eye-api.onrender.com/gaze-state'
+        )
+
+        if (!response.ok) {
+          throw new Error(`Eye API error: ${response.status}`)
+        }
+
+        const data = await response.json()
+
+        if (data.success === false) {
+          setEyeConnected(false)
+          return
+        }
+
+        setEyeConnected(true)
+        // setCalibrationStarted(data.phase === 'calibration')
+        // setCalibrationPoint(data.current_point ?? 1)
+        // setVerificationCode(data.verification_code || [])
+        // setConfirmedPoints(data.confirmed_points || [])
+        // setNextExpected(data.next_expected ?? null)
+        setCurrentPoint(data.current_point ?? null)
+        // setDone(data.verified === true)
+
+        // const totalPoints = data.verification_code?.length || 4
+        // const completedPoints = data.confirmed_points?.length || 0
+
+        // setProgress((completedPoints / totalPoints) * 100)
+
+      } catch (error) {
+        console.error('Eye API connection error:', error)
+        setEyeConnected(false)
+      }
+    }
+
+    fetchEyeState()
+
+    const interval = setInterval(fetchEyeState, 200)
+
+    return () => clearInterval(interval)
+  }, [])
+  const pointPositions: Record<number, { x: number; y: number }> = {
+    1: { x: 40, y: 45 },
+    2: { x: 440, y: 45 },
+    3: { x: 40, y: 475 },
+    4: { x: 440, y: 475 },
   }
 
-  fetchEyeState()
-
-  const interval = setInterval(fetchEyeState, 200)
-
-  return () => clearInterval(interval)
-}, [])
-const pointPositions: Record<number, { x: number; y: number }> = {
-  1: { x: 40, y: 45 },
-  2: { x: 440, y: 45 },
-  3: { x: 40, y: 475 },
-  4: { x: 440, y: 475 },
-}
-
-const signaturePath = confirmedPoints
-  .map((point) => pointPositions[point])
-  .filter(Boolean)
-  .map((point) => `${point.x},${point.y}`)
-  .join(' ')
+  const signaturePath = confirmedPoints
+    .map((point) => pointPositions[point])
+    .filter(Boolean)
+    .map((point) => `${point.x},${point.y}`)
+    .join(' ')
 
   return (
     <ScreenContainer>
@@ -2033,185 +2037,185 @@ const signaturePath = confirmedPoints
 
       <Card style={{ marginBottom: 20 }}>
         <div
-  style={{
-    textAlign: 'center',
-    marginBottom: 12,
-    fontFamily: 'Plus Jakarta Sans, Cairo',
-    fontWeight: 700,
-    fontSize: 16,
-    color: theme.primary,
-  }}
->
-  Verification Code:{' '}
-  {verificationCode.length > 0
-    ? verificationCode.join(' → ')
-    : 'Waiting...'}
-</div>
+          style={{
+            textAlign: 'center',
+            marginBottom: 12,
+            fontFamily: 'Plus Jakarta Sans, Cairo',
+            fontWeight: 700,
+            fontSize: 16,
+            color: theme.primary,
+          }}
+        >
+          Verification Code:{' '}
+          {verificationCode.length > 0
+            ? verificationCode.join(' → ')
+            : 'Waiting...'}
+        </div>
         <DarkCanvas height={520}>
           <video
-  ref={videoRef}
-  autoPlay
-  playsInline
-  muted
-  onLoadedMetadata={() => setCameraReady(true)}
-  style={{
-    position: 'absolute',
-    inset: 0,
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-    transform: 'scaleX(-1)',
-    borderRadius: 18,
-  }}
-  />
-  <div
-  style={{
-    position: 'absolute',
-    top: 8,
-    left: 8,
-    zIndex: 999,
-    background: 'black',
-    color: 'lime',
-    padding: '6px 8px',
-    fontSize: 11,
-    borderRadius: 6,
-  }}
->
-  {eyeDebug}
-</div>
-   {calibrationStarted && (
-  <>
-    <div
-      style={{
-        position: 'absolute',
-        top: 12,
-        left: 0,
-        right: 0,
-        textAlign: 'center',
-        color: 'white',
-        fontWeight: 700,
-        fontSize: 16,
-        zIndex: 30,
-        textShadow: '0 1px 5px rgba(0,0,0,0.8)',
-      }}
-    >
-      Look at Point {calibrationPoint}
-    </div>
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            onLoadedMetadata={() => setCameraReady(true)}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              transform: 'scaleX(-1)',
+              borderRadius: 18,
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              top: 8,
+              left: 8,
+              zIndex: 999,
+              background: 'black',
+              color: 'lime',
+              padding: '6px 8px',
+              fontSize: 11,
+              borderRadius: 6,
+            }}
+          >
+            {eyeDebug}
+          </div>
+          {calibrationStarted && (
+            <>
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 12,
+                  left: 0,
+                  right: 0,
+                  textAlign: 'center',
+                  color: 'white',
+                  fontWeight: 700,
+                  fontSize: 16,
+                  zIndex: 30,
+                  textShadow: '0 1px 5px rgba(0,0,0,0.8)',
+                }}
+              >
+                Look at Point {calibrationPoint}
+              </div>
 
-    <div
-      style={{
-        position: 'absolute',
+              <div
+                style={{
+                  position: 'absolute',
 
-        left:
-          calibrationPoint === 1 || calibrationPoint === 3
-            ? `${(90 / 480) * 100}%`
-            : `${(390 / 480) * 100}%`,
+                  left:
+                    calibrationPoint === 1 || calibrationPoint === 3
+                      ? `${(90 / 480) * 100}%`
+                      : `${(390 / 480) * 100}%`,
 
-        top:
-          calibrationPoint === 1 || calibrationPoint === 2
-            ? `${(60 / 210) * 100}%`
-            : `${(155 / 210) * 100}%`,
+                  top:
+                    calibrationPoint === 1 || calibrationPoint === 2
+                      ? `${(60 / 210) * 100}%`
+                      : `${(155 / 210) * 100}%`,
 
-        width: 30,
-        height: 30,
-        borderRadius: '50%',
-        background: theme.primary,
-        border: '4px solid white',
-        boxShadow: `0 0 22px ${theme.primary}`,
-        transform: 'translate(-50%, -50%)',
-        zIndex: 30,
-      }}
-    />
-  </>
-)}
-{!calibrationStarted && detectedPoint !== null && (
-  <div
-    style={{
-      position: 'absolute',
-      top: 12,
-      left: 0,
-      right: 0,
-      textAlign: 'center',
-      color: 'white',
-      fontWeight: 700,
-      fontSize: 16,
-      zIndex: 30,
-      textShadow: '0 1px 5px rgba(0,0,0,0.8)',
-    }}
-  >
-    Detected Point: {detectedPoint}
-  </div>
-)}
+                  width: 30,
+                  height: 30,
+                  borderRadius: '50%',
+                  background: theme.primary,
+                  border: '4px solid white',
+                  boxShadow: `0 0 22px ${theme.primary}`,
+                  transform: 'translate(-50%, -50%)',
+                  zIndex: 30,
+                }}
+              />
+            </>
+          )}
+          {!calibrationStarted && detectedPoint !== null && (
+            <div
+              style={{
+                position: 'absolute',
+                top: 12,
+                left: 0,
+                right: 0,
+                textAlign: 'center',
+                color: 'white',
+                fontWeight: 700,
+                fontSize: 16,
+                zIndex: 30,
+                textShadow: '0 1px 5px rgba(0,0,0,0.8)',
+              }}
+            >
+              Detected Point: {detectedPoint}
+            </div>
+          )}
 
-          <svg width="100%" height="100%" viewBox="0 0 480 520"style={{ position: 'absolute', inset: 0 }} preserveAspectRatio="none">
-           {[
-  { cx: 40, cy: 45 },
-  { cx: 440, cy: 45 },
-  { cx: 40, cy: 475 },
-  { cx: 440, cy: 475 }
-].map((d, i) => (
+          <svg width="100%" height="100%" viewBox="0 0 480 520" style={{ position: 'absolute', inset: 0 }} preserveAspectRatio="none">
+            {[
+              { cx: 40, cy: 45 },
+              { cx: 440, cy: 45 },
+              { cx: 40, cy: 475 },
+              { cx: 440, cy: 475 }
+            ].map((d, i) => (
               <g key={i}>
-  <circle
-    cx={d.cx}
-    cy={d.cy}
-    r={confirmedPoints.includes(i + 1) ? 11 : 7}
-    fill={confirmedPoints.includes(i + 1) ? `${theme.primary}55` : `${theme.primary}25`}
-    stroke={confirmedPoints.includes(i + 1) ? theme.primary : `${theme.primary}60`}
-    strokeWidth={confirmedPoints.includes(i + 1) ? 3 : 1.5}
-  />
+                <circle
+                  cx={d.cx}
+                  cy={d.cy}
+                  r={confirmedPoints.includes(i + 1) ? 11 : 7}
+                  fill={confirmedPoints.includes(i + 1) ? `${theme.primary}55` : `${theme.primary}25`}
+                  stroke={confirmedPoints.includes(i + 1) ? theme.primary : `${theme.primary}60`}
+                  strokeWidth={confirmedPoints.includes(i + 1) ? 3 : 1.5}
+                />
 
-  <circle
-    cx={d.cx}
-    cy={d.cy}
-    r="2.5"
-    fill={theme.primary}
-  />
+                <circle
+                  cx={d.cx}
+                  cy={d.cy}
+                  r="2.5"
+                  fill={theme.primary}
+                />
 
-  <text
-    x={d.cx}
-    y={d.cy + 19}
-    textAnchor="middle"
-    fill={confirmedPoints.includes(i + 1) ? theme.primary : `${theme.primary}55`}
-    fontSize="10"
-    fontFamily="Inter"
-  >
-    {i + 1}
-  </text>
-</g>
+                <text
+                  x={d.cx}
+                  y={d.cy + 19}
+                  textAnchor="middle"
+                  fill={confirmedPoints.includes(i + 1) ? theme.primary : `${theme.primary}55`}
+                  fontSize="10"
+                  fontFamily="Inter"
+                >
+                  {i + 1}
+                </text>
+              </g>
             ))}
-          {confirmedPoints.length >= 2 && (
-  <polyline
-    points={signaturePath}
-    fill="none"
-    stroke={theme.primary}
-    strokeWidth="3"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    style={{
-      filter: `drop-shadow(0 0 8px ${theme.primary}88)`
-    }}
-  />
-)}
+            {confirmedPoints.length >= 2 && (
+              <polyline
+                points={signaturePath}
+                fill="none"
+                stroke={theme.primary}
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{
+                  filter: `drop-shadow(0 0 8px ${theme.primary}88)`
+                }}
+              />
+            )}
           </svg>
           {currentPoint && pointPositions[currentPoint] && (
-  <div
-    style={{
-      position: 'absolute',
-      left: `${(pointPositions[currentPoint].x / 480) * 100}%`,
-      top: `${(pointPositions[currentPoint].y / 520) * 100}%`,
-      width: 22,
-      height: 22,
-      borderRadius: '50%',
-      background: `${theme.primary}ee`,
-      border: '2.5px solid white',
-      boxShadow: `0 0 18px ${theme.primary}cc`,
-      transform: 'translate(-50%, -50%)',
-      pointerEvents: 'none',
-      zIndex: 10,
-      transition: 'left 0.15s ease, top 0.15s ease',
-    }}
-  />
-)}
+            <div
+              style={{
+                position: 'absolute',
+                left: `${(pointPositions[currentPoint].x / 480) * 100}%`,
+                top: `${(pointPositions[currentPoint].y / 520) * 100}%`,
+                width: 22,
+                height: 22,
+                borderRadius: '50%',
+                background: `${theme.primary}ee`,
+                border: '2.5px solid white',
+                boxShadow: `0 0 18px ${theme.primary}cc`,
+                transform: 'translate(-50%, -50%)',
+                pointerEvents: 'none',
+                zIndex: 10,
+                transition: 'left 0.15s ease, top 0.15s ease',
+              }}
+            />
+          )}
           {done && (
             <div className="animate-float-in" style={{ position: 'absolute', inset: 0, background: 'rgba(5,5,16,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 18 }}>
               <div style={{ textAlign: 'center' }}>
@@ -2652,12 +2656,11 @@ function C7FinalConfirmation({
             position: 'relative',
             background: '#050510',
             border:
-              `2px solid ${
-                faceDetected === true
-                  ? '#16a34a'
-                  : faceDetected === false
-                    ? '#EF4444'
-                    : theme.border
+              `2px solid ${faceDetected === true
+                ? '#16a34a'
+                : faceDetected === false
+                  ? '#EF4444'
+                  : theme.border
               }`,
             boxShadow:
               '0 4px 16px rgba(0,0,0,0.15)',
@@ -2838,10 +2841,9 @@ function C7FinalConfirmation({
                   ? '#F0FDF4'
                   : theme.card,
               border:
-                `2.5px solid ${
-                  choice === 'yes'
-                    ? '#16a34a'
-                    : theme.border
+                `2.5px solid ${choice === 'yes'
+                  ? '#16a34a'
+                  : theme.border
                 }`,
               borderRadius: 16,
               padding:
@@ -2898,10 +2900,9 @@ function C7FinalConfirmation({
                   ? theme.dangerLight
                   : theme.card,
               border:
-                `2.5px solid ${
-                  choice === 'no'
-                    ? theme.danger
-                    : theme.border
+                `2.5px solid ${choice === 'no'
+                  ? theme.danger
+                  : theme.border
                 }`,
               borderRadius: 16,
               padding:
@@ -2963,10 +2964,9 @@ function C7FinalConfirmation({
                   : theme.dangerLight,
               borderRadius: 14,
               border:
-                `1px solid ${
-                  counting === 'yes'
-                    ? '#86EFAC'
-                    : '#FECACA'
+                `1px solid ${counting === 'yes'
+                  ? '#86EFAC'
+                  : '#FECACA'
                 }`,
             }}
           >
@@ -2979,11 +2979,11 @@ function C7FinalConfirmation({
               label={
                 counting === 'yes'
                   ? t(
-                      'perm.yes.counting'
-                    )
+                    'perm.yes.counting'
+                  )
                   : t(
-                      'perm.no.counting'
-                    )
+                    'perm.no.counting'
+                  )
               }
               color={
                 counting === 'yes'
