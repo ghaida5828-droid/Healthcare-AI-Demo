@@ -2250,7 +2250,9 @@ function C6Signature({ onNext }: { onNext: () => void }) {
         </div>
       </Card>
 
-      <BigButton onClick={onNext} variant="primary" disabled={!done}>{t('sig.submit')}</BigButton>
+      <BigButton onClick={onNext} variant="primary">
+  {t('sig.submit')}
+</BigButton>
     </ScreenContainer>
   )
 }
