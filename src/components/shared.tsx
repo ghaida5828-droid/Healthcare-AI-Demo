@@ -363,7 +363,7 @@ export function PageShell({ children }: { children: ReactNode }) {
 // ─── Screen Container ─────────────────────────────────────────────────────────
 export function ScreenContainer({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`animate-float-in ${className}`} style={{ maxWidth: 660, margin: '0 auto', padding: '32px 24px' }}>
+    <div className={`animate-float-in ${className}`} style={{ maxWidth: 1000, margin: '0 auto', padding: '32px 24px' }}>
       {children}
     </div>
   )

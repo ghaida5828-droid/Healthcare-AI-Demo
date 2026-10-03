@@ -35,7 +35,7 @@ const isRTL = dir === 'rtl'
   return (
     <PageShell>
       <Header />
-      <div style={{ maxWidth: 760, margin: '0 auto', padding: '32px 24px'}}>
+      <div style={{ maxWidth: '600px', margin: '0 auto', padding: '32px 24px'}}>
 
         {/* Hero */}
         <div className="animate-float-in" style={{ textAlign: 'center', marginBottom: 36 }}>

@@ -1337,74 +1337,75 @@ DIGITAL SIGNATURE: By completing the eye-controlled digital signature on EyeCare
 
 I voluntarily consent to the performance of the ${procedure} procedure.`
 
-  const consentTextAr = `أنا، المريض الموقّع أدناه أو ممثله المرخّص، أُقرّ بموجب هذا بموافقتي المستنيرة على إجراء ${procedure} في مدينة الملك سعود الطبية.
-
-الغرض: شرح لي الفريق الطبي طبيعة الإجراء والغرض منه والنتائج المتوقعة منه. أفهم أن هذا الإجراء يُجرى لتشخيص حالتي الطبية أو مراقبتها أو علاجها.
-
-المخاطر والفوائد: أفهم أن جميع الإجراءات الطبية تنطوي على مخاطر معينة. وقد أُوضحت لي المخاطر المحتملة والمضاعفات بما فيها الانزعاج وردود الفعل التحسسية والعدوى.
-
-البدائل: ناقش معي طبيبي خيارات العلاج البديلة، وأتيحت لي الفرصة لطرح الأسئلة.
-
-التوقيع الرقمي: من خلال إتمام التوقيع الرقمي بالتحكم العيني، أؤكد أن توقيعي العيني يُعدّ موافقة ملزمة قانونياً.
-
-أوافق طوعاً على إجراء ${procedure}.`
+  const consentTextAr = ""
 
   return (
     <ScreenContainer>
-      <ScreenTitle title={t('consent.title')} subtitle={`${t('proc.title')}: ${procedure}`} />
+      <div
+        style={{
+          width: '90vw',
+          maxWidth: '900px',
+          margin: '0 auto',
+        }}
+      >
+        <ScreenTitle title={t('consent.title')} subtitle={`${t('proc.title')}: ${procedure}`} />
 
-      <Card style={{ marginBottom: 20 }}>
-        {/* Header */}
-        <div style={{ borderBottom: `1.5px solid ${theme.border}`, paddingBottom: 14, marginBottom: 14 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-            <div>
-              <div style={{ fontFamily: 'Plus Jakarta Sans, Cairo', fontWeight: 800, fontSize: 14, color: theme.primary }}>{t('header.title')}</div>
-              <div style={{ fontFamily: 'Inter', fontSize: 11, color: theme.textMuted }}>Medical Consent — Form MC-{procedure.substring(0, 2).toUpperCase()}-2026</div>
-            </div>
-            <button
-              onClick={() => setAudio(!audio)}
-              style={{ background: audio ? theme.primaryLight : theme.card, border: `1.5px solid ${audio ? theme.primary : theme.border}`, borderRadius: 20, padding: '6px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontFamily: 'Inter, Cairo', fontWeight: 600, fontSize: 12, color: audio ? theme.primary : theme.textMuted, transition: 'all 0.2s' }}
-            >
-              🔊 {audio ? t('consent.stop') : t('consent.read')}
-            </button>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-            {[[t('pid.name'), 'Mohammed Al-Rashidi'], [t('proc.title').split(' ')[1] || 'Procedure', procedure], ['Date', '24 Sep 2026']].map(([k, v]) => (
-              <div key={k} style={{ background: theme.primaryLight, borderRadius: 8, padding: '7px 10px' }}>
-                <div style={{ fontFamily: 'Inter', fontSize: 10, color: theme.textMuted }}>{k}</div>
-                <div style={{ fontFamily: 'Plus Jakarta Sans, Cairo', fontWeight: 600, fontSize: 12, color: theme.text }}>{v}</div>
+        <Card style={{ marginBottom: 20 }}>
+          {/* Header */}
+          <div style={{ borderBottom: `1.5px solid ${theme.border}`, paddingBottom: 14, marginBottom: 14 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+              <div>
+                <div style={{ fontFamily: 'Plus Jakarta Sans, Cairo', fontWeight: 800, fontSize: 14, color: theme.primary }}>{t('header.title')}</div>
+                <div style={{ fontFamily: 'Inter', fontSize: 11, color: theme.textMuted }}>Medical Consent — Form MC-{procedure.substring(0, 2).toUpperCase()}-2026</div>
               </div>
-            ))}
+              <button
+                onClick={() => setAudio(!audio)}
+                style={{ background: audio ? theme.primaryLight : theme.card, border: `1.5px solid ${audio ? theme.primary : theme.border}`, borderRadius: 20, padding: '6px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontFamily: 'Inter, Cairo', fontWeight: 600, fontSize: 12, color: audio ? theme.primary : theme.textMuted, transition: 'all 0.2s' }}
+              >
+                🔊 {audio ? t('consent.stop') : t('consent.read')}
+              </button>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+              {[[t('pid.name'), 'Mohammed Al-Rashidi'], [t('proc.title').split(' ')[1] || 'Procedure', procedure], ['Date', '24 Sep 2026']].map(([k, v]) => (
+                <div key={k} style={{ background: theme.primaryLight, borderRadius: 8, padding: '7px 10px' }}>
+                  <div style={{ fontFamily: 'Inter', fontSize: 10, color: theme.textMuted }}>{k}</div>
+                  <div style={{ fontFamily: 'Plus Jakarta Sans, Cairo', fontWeight: 600, fontSize: 12, color: theme.text }}>{v}</div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
 
-        {/* Scrollable text */}
-        <div
-          style={{ maxHeight: 200, overflowY: 'auto', paddingRight: 6 }}
-          onScroll={(e) => {
-            const el = e.currentTarget
-            if (el.scrollTop + el.clientHeight >= el.scrollHeight - 20) setScrolled(true)
-          }}
-        >
-          <h3 style={{ fontFamily: 'Plus Jakarta Sans, Cairo', fontWeight: 700, fontSize: 14, color: theme.text, marginBottom: 10 }}>
-            {lang === 'ar' ? `نموذج الموافقة على إجراء ${procedure}` : `Consent for ${procedure}`}
-          </h3>
-          <p style={{ fontFamily: 'Inter, Cairo', fontSize: 13, color: theme.textMuted, lineHeight: 1.75, whiteSpace: 'pre-line' }}>
-            {lang === 'ar' ? consentTextAr : consentTextEn}
-          </p>
-        </div>
-
-        {!scrolled
-          ? <div style={{ marginTop: 10, padding: '8px', background: '#FFFBEB', borderRadius: 8, border: '1px solid #FDE68A', textAlign: 'center' }}>
-            <span style={{ fontFamily: 'Inter, Cairo', fontSize: 11, color: '#92400E' }}>{t('consent.scroll')}</span>
+          {/* Scrollable text */}
+          <div
+            style={{ maxHeight: 200, overflowY: 'auto', paddingRight: 6 }}
+            onScroll={(e) => {
+              const el = e.currentTarget
+              if (el.scrollTop + el.clientHeight >= el.scrollHeight - 20) setScrolled(true)
+            }}
+          >
+            <h3 style={{ fontFamily: 'Plus Jakarta Sans, Cairo', fontWeight: 700, fontSize: 14, color: theme.text, marginBottom: 10 }}>
+              {lang === 'ar' ? `نموذج الموافقة على إجراء ${procedure}` : `Consent for ${procedure}`}
+            </h3>
+            <p style={{ fontFamily: 'Inter, Cairo', fontSize: 13, color: theme.textMuted, lineHeight: 1.75, whiteSpace: 'pre-line' }}>
+              أقرّ بأن الطبيب المعالج قد شرح لي طبيعة العملية المقترحة، والهدف منها، والفوائد المتوقعة، والبدائل العلاجية المتاحة، كما أتيحت لي الفرصة لطرح الأسئلة والحصول على إجابات واضحة.
+              أفهم أن هذه العملية، مثل أي تدخل جراحي، قد تنطوي على مخاطر ومضاعفات محتملة، والتي قد تشمل: <p style={{ color: 'orange', fontWeight: 'bold' }}>النزيف، العدوى، الجلطات، المضاعفات المرتبطة بالتخدير، إصابة الأعصاب أو الحبل الشوكي، فقدان أو تغير الإحساس، ضعف الحركة</p>، وفي حالات نادرة قد تحدث مضاعفات عصبية خطيرة قد تصل إلى <p style={{ color: 'red', fontWeight: 'bold' }}>الشلل الجزئي أو الكامل</p>، إضافة إلى احتمال الحاجة إلى تدخل جراحي إضافي.
+              كما أفهم أنه لا يمكن ضمان نتيجة محددة للعملية، وأن عدم إجراء العملية أو اختيار بديل علاجي قد تكون له مخاطر ونتائج مختلفة، وقد قام الفريق الطبي بشرحها لي.
+              أقرّ بأنني قرأت وفهمت المعلومات المتعلقة بالإجراء والمخاطر والفوائد والبدائل، وأتيحت لي الفرصة لطرح جميع أسئلتي. وبناءً على ذلك، أوافق بإرادتي على إجراء العملية المقترحة.
+            </p>
           </div>
-          : <div className="animate-float-in" style={{ marginTop: 10, padding: '9px 14px', background: '#F0FDF4', borderRadius: 10, border: '1px solid #86EFAC', textAlign: 'center' }}>
-            <span style={{ fontFamily: 'Inter, Cairo', fontSize: 12, color: '#15803d', fontWeight: 500 }}>{t('consent.read.done')}</span>
-          </div>
-        }
-      </Card>
 
-      <BigButton onClick={onNext} variant="primary" disabled={!scrolled}>{t('consent.continue')}</BigButton>
+          {!scrolled
+            ? <div style={{ marginTop: 10, padding: '8px', background: '#FFFBEB', borderRadius: 8, border: '1px solid #FDE68A', textAlign: 'center' }}>
+              <span style={{ fontFamily: 'Inter, Cairo', fontSize: 11, color: '#92400E' }}>{t('consent.scroll')}</span>
+            </div>
+            : <div className="animate-float-in" style={{ marginTop: 10, padding: '9px 14px', background: '#F0FDF4', borderRadius: 10, border: '1px solid #86EFAC', textAlign: 'center' }}>
+              <span style={{ fontFamily: 'Inter, Cairo', fontSize: 12, color: '#15803d', fontWeight: 500 }}>{t('consent.read.done')}</span>
+            </div>
+          }
+        </Card>
+
+        <BigButton onClick={onNext} variant="primary" disabled={!scrolled}>{t('consent.continue')}</BigButton>
+      </div>
     </ScreenContainer>
   )
 }
